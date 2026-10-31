@@ -104,42 +104,81 @@ function App() {
     ].slice(0, 60));
   }, []);
 
-  const triggerSoundbox = useCallback((audioFile, text) => {
-    setSoundboxPlaying(true);
-    setTimeout(() => setSoundboxPlaying(false), 2400);
+  // Single shared soundbox player: a new clip always stops the previous one.
+  const audioRef = useRef(null);
+  const lastAlertKeyRef = useRef(null);
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
 
-    // If on merchant/laptop, play audio
-    try {
-      if (audioFile) {
-        const a = new Audio(`/audio/${audioFile}`);
-        a.play().catch(() => playSpeech(text));
-      } else if (text) {
-        playSpeech(text);
-      }
-    } catch {
-      playSpeech(text);
+  const stopSound = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.pause();
+      audioRef.current = null;
     }
-  }, []);
-
-  const playSpeech = (text) => {
-    if (!text || typeof window === "undefined" || !window.speechSynthesis) return;
     try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "hi-IN";
-      u.rate = 0.95;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      window.speechSynthesis?.cancel();
     } catch {
       /* ignore */
     }
-  };
+  }, []);
+
+  const playSound = useCallback(({ file, text, lang = "hi-IN" }) => {
+    stopSound();
+    setSoundboxPlaying(true);
+    const done = () => setSoundboxPlaying(false);
+
+    const speak = () => {
+      if (!text || !window.speechSynthesis) return done();
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang;
+        u.rate = 0.95;
+        const voices = window.speechSynthesis.getVoices?.() || [];
+        const voice = voices.find((v) => v.lang.startsWith(lang.slice(0, 2)));
+        if (voice) u.voice = voice;
+        u.onend = done;
+        u.onerror = done;
+        window.speechSynthesis.speak(u);
+      } catch {
+        done();
+      }
+    };
+
+    if (!file) return speak();
+    const a = new Audio(file.startsWith("/") ? file : `/audio/${file}`);
+    audioRef.current = a;
+    a.onended = done;
+    a.play().catch(() => {
+      if (audioRef.current === a) {
+        audioRef.current = null;
+        speak();
+      }
+    });
+  }, [stopSound]);
+
+  // Announce a backend alert once; repeated broadcasts of the same session must not replay it.
+  const handleAlert = useCallback((session, { baseline = false } = {}) => {
+    const alert = session?.soundbox_alert;
+    const key = alert ? `${session.status}|${alert.audio_file}|${alert.text}` : null;
+    if (key === lastAlertKeyRef.current) return;
+    lastAlertKeyRef.current = key;
+    if (!alert) return stopSound();
+    // The soundbox lives at the merchant counter; the customer phone stays quiet.
+    if (baseline || viewModeRef.current === "client") return;
+    playSound({ file: alert.audio_file, text: alert.text });
+  }, [playSound, stopSound]);
+
+  useEffect(() => stopSound, [stopSound]);
 
   // Connect WebSocket to backend
   useEffect(() => {
     let ws = null;
     let reconnectTimeout = null;
+    let disposed = false;
 
     const connect = () => {
+      if (disposed) return;
       try {
         ws = new WebSocket(WS_URL);
         ws.onopen = () => {
@@ -151,6 +190,8 @@ function App() {
             const data = JSON.parse(event.data);
             if (data.session) {
               setSession(data.session);
+              // SYNC_STATE replays whatever alert is current; don't announce it on (re)connect.
+              handleAlert(data.session, { baseline: data.type === "SYNC_STATE" });
             }
             if (data.ledger) {
               setLedger(data.ledger);
@@ -158,20 +199,13 @@ function App() {
             if (data.message) {
               pushEvent(data.type, data.message);
             }
-            // Trigger soundbox audio when alert arrives
-            if (data.session?.soundbox_alert?.audio_file) {
-              triggerSoundbox(
-                data.session.soundbox_alert.audio_file,
-                data.session.soundbox_alert.text
-              );
-            }
           } catch {
             /* ignore */
           }
         };
         ws.onclose = () => {
           setConnected(false);
-          reconnectTimeout = setTimeout(connect, 2000);
+          if (!disposed) reconnectTimeout = setTimeout(connect, 2000);
         };
         ws.onerror = () => {
           setConnected(false);
@@ -185,10 +219,15 @@ function App() {
     connect();
 
     return () => {
-      if (ws) ws.close();
+      disposed = true;
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws) {
+        ws.onclose = null;
+        ws.onmessage = null;
+        ws.close();
+      }
     };
-  }, [WS_URL, pushEvent, triggerSoundbox]);
+  }, [WS_URL, pushEvent, handleAlert]);
 
   // Initial fetch of session state
   useEffect(() => {
@@ -317,8 +356,7 @@ function App() {
     certificate,
     bankHealth,
     soundboxPlaying,
-    onPlaySoundbox: () =>
-      triggerSoundbox(session?.soundbox_alert?.audio_file, session?.soundbox_alert?.text),
+    onPlaySoundbox: playSound,
     onScanQR: handleScanQR,
     onInstantRefund: handleInstantRefund,
     onDecision: handleDecision,

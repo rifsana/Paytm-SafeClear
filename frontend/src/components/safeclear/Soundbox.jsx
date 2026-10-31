@@ -59,48 +59,18 @@ export const Soundbox = ({ amount, playing, onPlay, status, token = "4821", cust
 
   const speak = () => {
     if (!currentCategory) return;
-    try {
-      // First try to play pre-recorded audio file if available
-      let fileToPlay = null;
-      if (currentCategory === "duplicate") fileToPlay = "/audio/sbx_dupe_warning.wav";
-      else if (currentCategory === "refund") fileToPlay = "/audio/sbx_dupe_refunded_400.wav";
-      else if (currentCategory === "pending") fileToPlay = "/audio/sbx_holding_token.wav";
-      else if (currentCategory === "decline") fileToPlay = "/audio/sbx_decline_350.wav";
-      else if (amount === 350) fileToPlay = "/audio/sbx_success_350.wav";
-      else if (amount === 250) fileToPlay = "/audio/sbx_success_250.wav";
-      else fileToPlay = "/audio/sbx_success_400.wav";
-
-      if (fileToPlay && lang === "Hindi") {
-        const a = new Audio(fileToPlay);
-        a.play().catch(() => playSpeechSynthesis());
-      } else {
-        playSpeechSynthesis();
-      }
-    } catch {
-      playSpeechSynthesis();
+    // Pre-recorded clips are Hindi; other languages use speech synthesis.
+    let file = null;
+    if (lang === "Hindi") {
+      if (currentCategory === "duplicate") file = "/audio/sbx_dupe_warning.wav";
+      else if (currentCategory === "refund") file = "/audio/sbx_dupe_refunded_400.wav";
+      else if (currentCategory === "pending") file = "/audio/sbx_holding_token.wav";
+      else if (currentCategory === "decline") file = "/audio/sbx_decline_350.wav";
+      else if (amount === 350) file = "/audio/sbx_success_350.wav";
+      else if (amount === 250) file = "/audio/sbx_success_250.wav";
+      else file = "/audio/sbx_success_400.wav";
     }
-    onPlay?.();
-  };
-
-  const playSpeechSynthesis = () => {
-    try {
-      const u = new SpeechSynthesisUtterance(currentText);
-      u.lang = LANG_LOCALE[lang];
-      u.rate = 0.95;
-      u.pitch = 1.1;
-      const voices = window.speechSynthesis.getVoices?.() || [];
-      const vMatch = voices.find(
-        (v) =>
-          (v.lang.startsWith(LANG_LOCALE[lang].slice(0, 2)) || v.lang.includes("IN")) &&
-          /female|lekha|priya|swara|neerja|google.*hindi|samantha/i.test(v.name)
-      ) || voices.find((v) => v.lang.startsWith(LANG_LOCALE[lang].slice(0, 2)));
-
-      if (vMatch) u.voice = vMatch;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* ignore */
-    }
+    onPlay?.({ file, text: currentText, lang: LANG_LOCALE[lang] });
   };
 
   return (

@@ -8,7 +8,7 @@ const typeColor = (t) => {
 
 export const EventLog = ({ events = [] }) => {
   return (
-    <section className="card" data-testid="event-log">
+    <section className="card @container" data-testid="event-log">
       <div className="card-header">
         <div>
           <div className="card-title">Event stream</div>
@@ -16,11 +16,11 @@ export const EventLog = ({ events = [] }) => {
         </div>
         <span className="pill bg-slate-100 text-slate-600">{events.length}</span>
       </div>
-      <div className="thin-scroll max-h-80 overflow-y-auto px-4 py-2 sm:px-5">
+      <div className="thin-scroll max-h-72 overflow-y-auto px-4 py-2 sm:px-5">
         {events.length === 0 && <div className="py-8 text-center text-sm text-slate-500">Awaiting events…</div>}
-        <ol>
+        <ol className="@4xl:grid @4xl:grid-cols-2 @4xl:gap-x-8">
           {events.map((e, i) => (
-            <li key={e.id || i} data-testid={`event-log-item-${i}`} className="flex animate-fade-in gap-3 border-b border-slate-100 py-2.5 last:border-b-0">
+            <li key={e.id || i} data-testid={`event-log-item-${i}`} className="flex animate-fade-in gap-3 border-b border-slate-100 py-2.5">
               <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${typeColor(e.type)}`} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2">

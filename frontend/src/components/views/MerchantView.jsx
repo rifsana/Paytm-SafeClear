@@ -87,7 +87,8 @@ export const MerchantView = ({
 
       {/* Main grid */}
       <div className="mt-5 grid grid-cols-1 gap-4 @4xl:grid-cols-12 @4xl:gap-5">
-        <div className="space-y-4 @4xl:col-span-7">
+        {/* Both columns stretch to the taller one so the grid has no ragged gaps. */}
+        <div className="flex flex-col gap-4 @4xl:col-span-7">
           <POSTerminal
             amount={amount}
             status={status}
@@ -103,7 +104,7 @@ export const MerchantView = ({
             qrScanned={session?.qr_scanned}
           />
 
-          <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
+          <div className="grid flex-1 grid-cols-1 gap-4 @2xl:grid-cols-2">
             <Soundbox
               amount={amount}
               playing={soundboxPlaying}
@@ -116,7 +117,7 @@ export const MerchantView = ({
           </div>
         </div>
 
-        <div className="space-y-4 @4xl:col-span-5">
+        <div className="flex flex-col gap-4 @4xl:col-span-5">
           <AICopilot
             apiBase={apiBase}
             context={{
@@ -131,8 +132,11 @@ export const MerchantView = ({
           <BankHealth health={bankHealth}>
             <ChaosInjector onCrashHDFC={onCrashHDFC} onSpikeSBI={onSpikeSBI} onReset={onResetBanks} />
           </BankHealth>
-          <EventLog events={events} />
         </div>
+      </div>
+
+      <div className="mt-4 @4xl:mt-5">
+        <EventLog events={events} />
       </div>
 
       {certificate && (

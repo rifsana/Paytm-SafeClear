@@ -103,7 +103,7 @@ export const AICopilot = ({ apiBase, context }) => {
   };
 
   return (
-    <section data-testid="ai-copilot" className="card flex flex-col">
+    <section data-testid="ai-copilot" className="card flex min-h-0 flex-1 flex-col">
       <div className="card-header">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paytm-skySoft text-paytm-sky">
@@ -153,7 +153,7 @@ export const AICopilot = ({ apiBase, context }) => {
       </div>
 
       {/* Chat */}
-      <div ref={scrollRef} className="thin-scroll max-h-64 min-h-[8rem] space-y-2 overflow-y-auto px-4 py-3 sm:px-5">
+      <div ref={scrollRef} className="thin-scroll max-h-64 min-h-[8rem] flex-1 space-y-2 overflow-y-auto px-4 py-3 @4xl:max-h-[28rem] sm:px-5">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
