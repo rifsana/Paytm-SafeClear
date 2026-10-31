@@ -53,10 +53,10 @@ The core breakthrough of ClearMoment is treating a payment failure not as an iso
 │         (Clarity & Actionable Safety)        │       │         (Transparency & Empathy)             │
 ├──────────────────────────────────────────────┤       ├──────────────────────────────────────────────┤
 │ 🔊 Soundbox: Proactive, fraud-safe audio     │       │ 💡 Clear "Did Money Move?" Verdict           │
-│    ("Payment fail ho gaya - saman na dein")  │       │    (No hedging "if deducted" disclaimers)    │
+│    ("Rahul se ₹250 verify ho raha hai")      │       │    (No hedging "if deducted" disclaimers)    │
 │                                              │       │                                              │
-│ 📱 Merchant App: Instant full-screen card    │       │ 🧠 Sarvam AI "Why It Failed" Explainer       │
-│    showing exact status & immediate action   │       │    (Plain language in Hindi/Hinglish/Tamil)  │
+│ 📱 Merchant App: Identifier Note + Token     │       │ 🧠 Sarvam AI "Why It Failed" Explainer       │
+│    ("Pending: Rahul S. | Token #4821")       │       │    (Plain language in Hindi/Hinglish/Tamil)  │
 │                                              │       │                                              │
 │ 📷 Scan Customer QR: 1-second proof without  │       │ 📲 Auto-Surfaced Verification QR             │
 │    asking customer to hand over their phone  │       │    (Customer just shows phone to merchant)   │
@@ -71,16 +71,31 @@ The core breakthrough of ClearMoment is treating a payment failure not as an iso
 
 ### 🏪 A. Merchant-Side UX: Real-Time Clarity & Fraud-Safe Direction
 
+#### 🏷️ Counter-Proof Pending Notification (With Identifier Note & 4-Digit Token)
+At a busy counter (e.g., a tea stall or grocery queue), 3 people might pay around the same time. If a merchant simply receives *"Payment Pending ₹200"*, they have no idea **which customer** is stuck.
+
+ClearMoment solves this with **Instant Multi-Modal Identification**:
+1. **The 4-Digit Counter Token**:
+   - The moment a payment enters `PENDING`, both the customer's phone and the merchant's screen display an identical high-contrast **4-digit Counter Token** (e.g., `Token #4821`).
+   - The merchant glances at the customer's phone or asks *"Token number kya hai?"* $\rightarrow$ instant match in 1 second.
+2. **Customer Identity Note**:
+   - Merchant notification explicitly states:  
+     `⏳ Pending: ₹250 from Rahul S. (rah***@okhdfcbank) | Token #4821 | 13:42 PM`
+3. **Soundbox Voice Announcement (Sarvam `bulbul-v4-flash`)**:
+   - Soundbox vocalizes the identifier so the merchant doesn't even need to touch their phone:  
+     *"Dhyan dein: Rahul se ₹250 ka payment verification mein hai. Token 4821. Saman na dein."*
+
 | Failure State | Soundbox Audio (Sarvam `bulbul-v4-flash`) | Merchant App Screen UI | Primary Merchant Action |
 | :--- | :--- | :--- | :--- |
-| **Pre-Debit Decline** (`ZM` PIN / `Z9` Balance) | *"Payment asafal raha. Saman na dein."* | **Red Alert Card**: "Customer Payment Declined (Insufficient Balance / Wrong PIN)". | Tap **"Ask for Cash or Alternate Card"** |
-| **In-Flight Pending** (`U68` Bank Timeout) | *"Verification jari hai. 30 second ruko, saman na dein."* | **Amber Progress Card**: "Bank taking longer than usual. Auto-checking switch..." | Tap **"Scan Customer QR"** or wait for auto-refresh |
-| **Confirmed Failure After Timeout** | *"Bank ne mana kar diya. Saman na dein."* | **Red Card**: "Transaction Confirmed Failed. Safe to ask for alternate payment." | Tap **"Mark as Unpaid / Take Cash"** |
-| **Duplicate Detected** (Paid twice) | *"Chetawani: Duplicate payment detect hua."* | **Purple Banner**: "Customer paid ₹X twice within 60s. Auto-Refund armed." | Tap **"Issue 1-Tap Instant Refund"** |
+| **In-Flight Pending** (`U68` Bank Timeout) | *"Rahul se ₹250 ka payment verify ho raha hai. Token 4821. Saman na dein."* | **Amber Sticky Card**: `₹250 from Rahul S. [Token #4821] - Reconciling with bank...` | Glance at Token / Tap **"Scan Customer QR"** |
+| **Pre-Debit Decline** (`ZM` PIN / `Z9` Balance) | *"Token 4821 asafal raha. Saman na dein."* | **Red Alert Card**: `Token #4821 Declined (Low Balance / Wrong PIN)`. | Tap **"Ask for Cash or Alternate Card"** |
+| **Confirmed Failure After Timeout** | *"Token 4821 bank ne reject kiya. Saman na dein."* | **Red Card**: `Token #4821 Timed Out. Auto-Refund armed.` | Tap **"Take Cash"** |
+| **Duplicate Detected** (Paid twice) | *"Chetawani: Duplicate payment detect hua."* | **Purple Banner**: `Rahul S. paid ₹250 twice within 45s.` | Tap **"Issue 1-Tap Instant Refund"** |
 
 #### Why this transforms merchant life:
 1. **No digging into transaction lists**: The merchant doesn't have to unlock their phone, open Paytm for Business, navigate to history, and pull-to-refresh while customers wait in line.
-2. **Fraud-Proof Soundbox**: The Soundbox explicitly tells the merchant *"Saman na dein"* (Do not release goods) when verification is pending or failed. Scammers can no longer pretend a pending screen is a success.
+2. **Instant Customer Attribution**: The 4-digit token + customer name tag removes any ambiguity about whose payment is pending at a crowded counter.
+3. **Fraud-Proof Soundbox**: The Soundbox explicitly tells the merchant *"Saman na dein"* (Do not release goods) when verification is pending or failed. Scammers can no longer pretend a pending screen is a success.
 
 ---
 
@@ -214,4 +229,3 @@ We standardize exclusively on **Sarvam AI** for an end-to-end sovereign Indian A
 
 ---
 *Document created for Paytm Build for India AI Hackathon (Track 2: AI-Powered Financial Journeys).*
-
