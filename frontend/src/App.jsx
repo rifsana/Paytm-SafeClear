@@ -5,6 +5,7 @@ import { Smartphone, Store, Columns2 } from "lucide-react";
 import { ClientView } from "@/components/views/ClientView";
 import { MerchantView } from "@/components/views/MerchantView";
 import { PaytmLogo, LiveDot } from "@/components/ui/Brand";
+import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { uid } from "@/lib/simulator";
 
 const nowHMS = () => new Date().toLocaleTimeString("en-GB", { hour12: false });
@@ -406,14 +407,12 @@ function App() {
       {effectiveMode === "merchant" && <MerchantView {...merchantProps} />}
 
       {effectiveMode === "split" && (
-        <div className="mx-auto grid max-w-[1440px] grid-cols-[400px_minmax(0,1fr)] gap-6 px-6 py-6">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-[auto_minmax(0,1fr)] gap-6 px-6 py-6">
           <aside className="sticky top-20 self-start">
-            <div className="mx-auto w-[380px] rounded-[44px] bg-slate-900 p-3 shadow-lift">
-              <div className="relative h-[min(780px,calc(100dvh-140px))] overflow-hidden rounded-[34px] bg-paytm-bg">
-                <ClientView {...clientProps} embedded />
-              </div>
-            </div>
-            <p className="mt-3 text-center text-xs text-slate-500">Customer phone · live synced</p>
+            {/* reserved = app bar + page padding + caption */}
+            <PhoneFrame reserved={136} caption="Customer phone · live synced">
+              <ClientView {...clientProps} embedded />
+            </PhoneFrame>
           </aside>
           <div className="min-w-0">
             <MerchantView {...merchantProps} embedded />

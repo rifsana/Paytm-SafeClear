@@ -173,18 +173,31 @@ export const ClientView = ({
         </button>
       </div>
 
-      <main className="flex-1 space-y-3 p-4">
+      <main className={`flex-1 ${embedded ? "space-y-2.5 px-4 pb-4 pt-2" : "space-y-3 p-4"}`}>
         {/* Payee + amount */}
-        <section className="card px-5 pb-5 pt-6 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-paytm-skySoft text-lg font-bold text-paytm-navy">
-            {initials(store)}
-          </div>
-          <div className="mt-3 text-base font-semibold text-slate-900">Paying {store}</div>
-          <div className="mt-0.5 text-xs text-slate-500">PAYTM_POS_001 · Token #{token}</div>
-          <div className="mt-4 text-[40px] font-bold leading-none tracking-tight text-paytm-navy tabular">
-            {formatINR(amount)}
-          </div>
-        </section>
+        {embedded ? (
+          <section className="card flex items-center gap-3 p-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-paytm-skySoft text-base font-bold text-paytm-navy">
+              {initials(store)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-slate-900">Paying {store}</div>
+              <div className="text-xs text-slate-500">Token #{token}</div>
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-paytm-navy tabular">{formatINR(amount)}</div>
+          </section>
+        ) : (
+          <section className="card px-5 pb-5 pt-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-paytm-skySoft text-lg font-bold text-paytm-navy">
+              {initials(store)}
+            </div>
+            <div className="mt-3 text-base font-semibold text-slate-900">Paying {store}</div>
+            <div className="mt-0.5 text-xs text-slate-500">PAYTM_POS_001 · Token #{token}</div>
+            <div className="mt-4 text-[40px] font-bold leading-none tracking-tight text-paytm-navy tabular">
+              {formatINR(amount)}
+            </div>
+          </section>
+        )}
 
         {status === "IDLE" && (
           <section className="card animate-fade-in p-4">
@@ -265,13 +278,13 @@ export const ClientView = ({
         )}
 
         {status === "TIMEOUT_PENDING" && (
-          <section className="card animate-fade-in space-y-4 p-4">
+          <section className={`card animate-fade-in p-4 ${embedded ? "space-y-3" : "space-y-4"}`}>
             <Verdict tone="amber" icon={AlertCircle} title="Paisa kata hai — confirming" subtitle="Your bank is slow to confirm. Don't pay again." />
 
             <div className="rounded-2xl border border-slate-200 p-4 text-center">
               <div className="eyebrow">Show this to the merchant</div>
               <div className="mx-auto mt-3 w-fit rounded-xl border border-slate-100 bg-white p-2.5 shadow-card">
-                <svg viewBox="0 0 25 25" className="block h-40 w-40" shapeRendering="crispEdges">
+                <svg viewBox="0 0 25 25" className={`block ${embedded ? "h-36 w-36" : "h-40 w-40"}`} shapeRendering="crispEdges">
                   {qrCells.map((v, i) =>
                     v ? <rect key={i} x={i % 25} y={Math.floor(i / 25)} width="1" height="1" fill="#002970" /> : null
                   )}
@@ -281,9 +294,11 @@ export const ClientView = ({
               <div className="mt-0.5 text-[11px] text-slate-400">HMAC-SHA256 signed</div>
             </div>
 
-            <p className="text-center text-xs leading-relaxed text-slate-600">
-              The merchant scans this to verify instantly. SafeClear is reconciling with the bank in the background.
-            </p>
+            {!embedded && (
+              <p className="text-center text-xs leading-relaxed text-slate-600">
+                The merchant scans this to verify instantly. SafeClear is reconciling with the bank in the background.
+              </p>
+            )}
           </section>
         )}
 
@@ -356,9 +371,11 @@ export const ClientView = ({
         </section>
       </main>
 
-      <footer className="px-4 pb-6 pt-1 text-center text-[11px] text-slate-400">
-        SafeClear by Paytm · UPI counter payments
-      </footer>
+      {!embedded && (
+        <footer className="px-4 pb-6 pt-1 text-center text-[11px] text-slate-400">
+          SafeClear by Paytm · UPI counter payments
+        </footer>
+      )}
     </div>
   );
 };
