@@ -1,138 +1,88 @@
-# Paytm SafeClear 🛡️⚡
-> **Autonomous Incident Resolution & Merchant AI Teammate for Ambiguous POS UPI Transactions**
-
-Paytm SafeClear is an autonomous UPI resolution platform engineered to eliminate counter friction, prevent duplicate payments, and resolve ambiguous transaction states in real-time. By bridging the gap between customer payment apps, merchant POS terminals, the iconic Paytm Soundbox, and NPCI UDIR (Unified Dispute & Issue Resolution), SafeClear delivers zero-wait, fraud-proof transaction closure.
-
----
-
-## 🌟 Key Features
-
-### 1. 📱 Customer Payer App Simulator
-- **Dynamic UPI QR Code**: Real-time deterministic 25×25 QR generation with animated laser scanning.
-- **SafeClear Auto-Lock**: Automatically locks the QR code upon bank timeouts or decline events to prevent customers from entering duplicate retry loops.
-- **Natural Language Dispute Triage**: Payer can type queries in conversational Hinglish (*"Paisa kat gaya par dukandar bola nahi aaya"*); SafeClear categorizes and provides instant resolution steps.
-
-### 2. 🏪 Merchant Counter & POS Terminal
-- **Smart POS Terminal**: Real-time transaction monitoring with automated status badges (`SETTLED`, `PENDING`, `WEBHOOK DELAY`, `HUMAN-IN-LOOP`).
-- **Tactical Merchant Actions**: One-click counter decision controls:
-  - `Release Goods` — backed by SafeClear guarantee.
-  - `Cash + Auto-Refund` — take cash and arm automatic refund if delayed UPI credit arrives.
-  - `Hold Queue` — manage counter rush smoothly.
-- **Paytm Soundbox 4G**: Integrated voice alerts with waveform animation and multilingual support (*Hindi, English, Tamil, Telugu*) with clear, natural female speech synthesis.
-- **Live Merchant Ledger**: Real-time audit trail of settled, failed, and auto-refunded transactions.
-
-### 3. 🤖 Merchant AI Copilot & Engine
-- **Voice-Enabled Copilot**: Local Ollama-powered LLM assistant (`qwen2.5:1.5b` / `llama3.2:1b`) operating in conversational Hinglish.
-- **Live Bank Health Grid**: Real-time telemetry monitoring for top issuer banks (*HDFC, SBI, ICICI, Axis*) tracking P95 latency and timeout percentages.
-- **Bank Chaos Injector**: Tactical ops tools to simulate real-world festival surges (`Crash HDFC`, `Spike SBI`, `Reset Normal`).
-- **SafeClear Event Stream**: High-frequency real-time event log tracking protocol handshakes, NPCI checks, and webhook reconciliation.
-
-### 4. 🔏 NPCI UDIR Settlement Certificate
-- Generates cryptographically verifiable settlement dockets with **SHA-256 HMAC** cryptographic seals, dispute references, and transaction proofs.
+# Paytm ClearMoment 🚀⚡
+> **Track 2: AI-Powered Financial Journeys — Humanizing the Ambiguous 60 Seconds of UPI Point-of-Sale Payments**  
+> *Powered by Sarvam AI (`sarvam-105b`, `bulbul-v4-flash`, `saaras-v4`, `sarvam-m`)*
 
 ---
 
-## 🏗️ Architecture
+## 📌 Executive Summary
 
-```
-                                  ┌───────────────────────────────┐
-                                  │      Paytm SafeClear Web UI    │
-                                  │  (React 18 + Vite + Tailwind) │
-                                  └──────────────┬────────────────┘
-                                                 │
-                                ┌────────────────┴────────────────┐
-                                │                                 │
-                     REST / SSE / WS APIs                  Web Speech API
-                                │                          (Voice Copilot)
-                                ▼                                 │
-                 ┌─────────────────────────────┐                  ▼
-                 │       FastAPI Backend       │         Paytm Soundbox 4G
-                 │   - Scenario Orchestrator   │
-                 │   - UDIR Dispute Engine     │
-                 │   - HMAC Docket Generator   │
-                 └──────────────┬──────────────┘
-                                │
-                 ┌──────────────┴──────────────┐
-                 │                             │
-                 ▼                             ▼
-       ┌──────────────────┐          ┌───────────────────┐
-       │   Ollama Local   │          │   NPCI UDIR Mock  │
-       │  Qwen / Llama 3  │          │  Resolution Engine│
-       └──────────────────┘          └───────────────────┘
-```
+UPI handles over 14 billion transactions monthly with incredible resilience, yet **the human experience collapses at the moment of ambiguity** (*"Paisa kat gaya par mila nahi"*).
+- The customer receives a bank debit SMS and panics.
+- The merchant's Soundbox remains completely silent.
+- The retail counter enters a 60-second deadlock: queues stall, merchants demand a second payment, and panicked customers pay twice, causing accidental duplicate debits.
+
+Fintech apps currently use lazy catch-all hedging:  
+> *"Payment Failed. If money was deducted from your account, it will be refunded within 3-5 business days."*
+
+**Paytm ClearMoment** fixes this moment of truth using sovereign Indian AI (**Sarvam AI**) and a **Dynamic Status QR Protocol** to turn silent panic into transparent, human guidance.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🌟 The 4 Core Pillars
+
+### 1. 📲 Pillar 1: Dynamic Transaction Status QR ("Scan-to-Know")
+- **Instant Trigger**: The millisecond a transaction enters `PENDING`, `PROCESSING`, or `TIMEOUT`, the customer's screen flips to a dynamic, cryptographically signed QR code.
+- **Instant Counter Token**: A high-contrast **4-digit token** (e.g. `Token #4821`) matching between customer phone and merchant POS.
+- **Merchant Verification**: The merchant taps **"Scan Customer QR"** on the POS for 1-second cryptographic verification without asking the customer to hand over their phone.
+
+### 2. 🧠 Pillar 2: Sarvam AI Failure Explainer & Soundbox Vocalizer
+- **Contextual Translation (`sarvam-105b`)**: Converts raw ISO/NPCI error codes (`ZM`, `Z9`, `U16`, `U68`, `RB`, `91`) into deterministic, plain-language vernacular instructions in Hindi, Hinglish, Tamil, and English.
+- **Verdict Badges**:
+  - `✅ ZERO PAISA KATA`: Clearly proves when money never left the account (ZM, Z9, U16).
+  - `⏳ PAISA KATA HAI — CLEARANCE IN PROGRESS`: Shows safe clearance underway during bank network timeouts (U68).
+- **Sub-250ms Soundbox Audio (`bulbul-v4-flash`)**:
+  - Vocalizes fraud-safe counter announcements (*"Token 4821 verify ho raha hai. Saman na dein."*).
+  - Eliminates walkaway fraud by **never** saying "payment received" until 100% settlement.
+
+### 3. 🛡️ Pillar 3: Intent-Level Duplicate Guard & 1-Tap Auto-Refund
+- **Real-Time Detection (`sarvam-m`)**: Evaluates `(Customer VPA + Merchant ID + Amount + Timestamp < 120s)`.
+- **Proactive Warning**: Sounds duplicate warning before settling second payment.
+- **1-Tap Instant Refund**: If duplicate occurs, surfaces a prominent 1-tap refund button on merchant POS with instant IMPS/UPI credit and sealed UDIR audit docket.
+
+### 4. ⚡ Pillar 4: Intelligent Fallback (UPI Lite & Self-Healing)
+- If primary bank account fails due to balance (`Z9`) or bank server latency, ClearMoment surfaces a **1-tap checkout via on-device UPI Lite** (up to ₹500, zero core banking latency).
+
+---
+
+## 🎬 Master Demo Scenarios
+
+| Scenario | Trigger | What Current Apps Do | What ClearMoment Does (Sarvam AI) |
+| :--- | :--- | :--- | :--- |
+| **Scenario A: The False Alarm** | ₹350 at bakery; bank returns `Z9` (Insufficient Balance) | Silent soundbox. Customer panics: *"Did my ₹350 get deducted?"* | Green Badge: **"Zero Paisa Kata"**. Sarvam explainer explains why. Surfaces **"1-Tap Pay ₹350 via UPI Lite"**. Payment completes in 2s. Soundbox rings! |
+| **Scenario B: Bank Server Timeout** | ₹250 at sweet shop; SBI switch latency spike (`U68`) | Counter standoff. Merchant refuses sweets; customer shows debit SMS. | Phone flips to **Dynamic Status QR [Token #4821]**. Soundbox: *"Rahul se ₹250 verify ho raha hai. Token 4821. Saman na dein."* Merchant scans QR. Switch confirms. Turns Green! |
+| **Scenario C: Duplicate Guard & Refund** | Customer panics during pending and pays ₹400 again within 45s | Merchant gets ₹400 twice; customer waits 5 days for manual chargeback. | Sarvam-m detects 98% confidence duplicate intent. Soundbox: *"Chetawani! Duplicate payment detect hua."* POS surfaces **"Issue 1-Tap Instant Refund"**. Instant money back! |
+
+---
+
+## 🚀 Running the Project
 
 ### Prerequisites
-- **Node.js** (v18 or later)
-- **Python** (v3.10 or later)
-- **Ollama** (optional, for local offline AI copilot)
+- Node.js (v18+)
+- Python (3.10+)
 
-### 1. Clone the Repository
+### Quick Start (macOS / Linux)
 ```bash
-git clone https://github.com/rifsana/Paytm-SafeClear.git
-cd Paytm-SafeClear
+./start.sh
 ```
 
-### 2. Backend Setup
-```bash
-cd backend
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-
-pip install -r requirements.txt
-python main.py
-```
-*Backend runs on `http://localhost:8000`.*
-
-### 3. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-*Frontend runs on `http://localhost:5173`.*
-
-### 4. Start Local AI Copilot (Optional)
-```bash
-ollama serve
-ollama pull qwen2.5:1.5b
-```
-
-### 5. One-Click Start (Windows PowerShell)
-You can launch both services together with:
+### Quick Start (Windows)
 ```powershell
 .\start.ps1
 ```
 
----
+### Manual Setup
+```bash
+# Backend (FastAPI on Port 8000)
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-## 🧪 Incident Scenarios Demonstrated
+# Frontend (Vite + React on Port 5173)
+cd frontend
+npm install
+npm run dev
+```
 
-| Scenario | Issue | SafeClear Autonomous Resolution |
-| :--- | :--- | :--- |
-| **Late Webhook Success** | Bank debited ₹250, but merchant POS webhook delayed. | SafeClear queries NPCI UDIR, confirms settlement in 3.6s, sounds Paytm Soundbox, preventing customer from being asked to pay twice. |
-| **Bank Decline** | Payer bank declines ₹500 transaction. | SafeClear auto-locks QR code to block retry loop, notifies merchant counter to hold goods, and informs customer. |
-| **Bank Timeout 60s** | Axis bank experiences latency spike on ₹1,200 payment. | SafeClear escalates to Human-in-Loop: merchant takes cash and arms auto-refund docket if UPI credit clears later. |
-| **Duplicate Payment** | Customer double-scans and initiates two ₹400 debits. | SafeClear detects duplicate intent ID, clears order #1, and triggers auto-refund for order #2 via NPCI UDIR. |
-
----
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React 18, Vite, Tailwind CSS, Lucide React, Sonner Toast
-- **Backend**: FastAPI, Uvicorn, Pydantic, HTTPX, WebSockets
-- **AI & Speech**: Ollama (`qwen2.5:1.5b`), Web Speech API (Voice Synthesis & Recognition)
-- **Security**: SHA-256 HMAC Verification Seals, Audit Dockets
-
----
-
-## 📄 License
-
-This project was built for the Paytm SafeClear Autonomous Resolution Hackathon. All rights reserved.
-
+Visit **http://localhost:5173** to experience the interactive demo!

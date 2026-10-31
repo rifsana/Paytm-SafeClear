@@ -52,6 +52,11 @@
   60% { opacity: 0; }
   100% { top: 4%; opacity: 0; }
 }
+@keyframes scanLaser {
+  0% { top: 0%; opacity: 0.8; }
+  50% { top: 95%; opacity: 1; }
+  100% { top: 0%; opacity: 0.8; }
+}
 .qr-laser {
   position: absolute;
   left: 4%;

@@ -1,55 +1,82 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@/App.css";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
+import { Smartphone, Monitor, Columns, RefreshCw } from "lucide-react";
 
-import { TopBar } from "@/components/safeclear/TopBar";
-import { ScenarioBar } from "@/components/safeclear/ScenarioBar";
-import { PhoneMockup } from "@/components/safeclear/PhoneMockup";
-import { POSTerminal } from "@/components/safeclear/POSTerminal";
-import { Soundbox } from "@/components/safeclear/Soundbox";
-import { LedgerFeed } from "@/components/safeclear/LedgerFeed";
-import { AICopilot } from "@/components/safeclear/AICopilot";
-import { BankHealth } from "@/components/safeclear/BankHealth";
-import { ChaosInjector } from "@/components/safeclear/ChaosInjector";
-import { EventLog } from "@/components/safeclear/EventLog";
-import { CertificateCard } from "@/components/safeclear/CertificateCard";
-
-import {
-  SCENARIOS,
-  buildTimeline,
-  makeInitialBankHealth,
-  finalStatusFor,
-  uid,
-} from "@/lib/simulator";
-
-const API = 'http://localhost:8000/api';
+import { ClientView } from "@/components/views/ClientView";
+import { MerchantView } from "@/components/views/MerchantView";
+import { uid } from "@/lib/simulator";
 
 const nowHMS = () => new Date().toLocaleTimeString("en-GB", { hour12: false });
 
 function App() {
-  const [speed, setSpeed] = useState("1x");
-  const [activeScenario, setActiveScenario] = useState(null);
-  const [phase, setPhase] = useState("IDLE");
-  const [running, setRunning] = useState(false);
+  // Determine view mode: client, merchant, or split
+  const [viewMode, setViewModeState] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get("view");
+      if (v === "client") return "client";
+      if (v === "merchant") return "merchant";
+      if (v === "split") return "split";
+      // Only auto-detect if the device is genuinely a mobile phone user-agent
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+      if (isMobileUA) return "client";
+    }
+    return "merchant";
+  });
+
+  const setViewMode = (mode) => {
+    setViewModeState(mode);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", mode);
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
+
+  const [session, setSession] = useState({
+    scenario: "SCENARIO_A",
+    status: "IDLE",
+    amount: 350.0,
+    token: "4821",
+    customer: "Rahul S.",
+    vpa: "rahul9821@okhdfcbank",
+    bank: "HDFC",
+    store: "Sharma Bakery",
+    error_code: null,
+    badge: null,
+    sarvam_explainer: null,
+    soundbox_alert: null,
+    qr_payload: null,
+    qr_scanned: false,
+    duplicate_detected: false,
+    refund_executed: false,
+  });
+
+  const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState([]);
   const [ledger, setLedger] = useState([]);
   const [certificate, setCertificate] = useState(null);
-  const [bankHealth, setBankHealth] = useState(makeInitialBankHealth());
   const [soundboxPlaying, setSoundboxPlaying] = useState(false);
-  const [posDecision, setPosDecision] = useState(null);
-  const [lockSeconds, setLockSeconds] = useState(0);
-  const [dispute, setDispute] = useState("");
-  const [triageResult, setTriageResult] = useState(null);
-  const [posCountdown, setPosCountdown] = useState(0);
+  const [bankHealth, setBankHealth] = useState({
+    HDFC: { status: "NORMAL", latency: 180, timeoutPct: 0.4 },
+    SBI:  { status: "LATENCY_SPIKE", latency: 1250, timeoutPct: 4.8 },
+    ICICI:{ status: "NORMAL", latency: 150, timeoutPct: 0.3 },
+    Axis: { status: "NORMAL", latency: 260, timeoutPct: 0.8 },
+  });
 
-  const timeoutsRef = useRef([]);
-  const bankTickRef = useRef(null);
-  const lockTickRef = useRef(null);
-  const posTickRef = useRef(null);
+  const wsRef = useRef(null);
+  const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
+  const port = typeof window !== "undefined" ? window.location.port : "8000";
+  const proto = typeof window !== "undefined" && window.location.protocol === "https:" ? "https:" : "http:";
+  const wsProto = proto === "https:" ? "wss:" : "ws:";
 
-  const scenarioObj = activeScenario ? SCENARIOS[activeScenario] : null;
-
-  const speedFactor = speed === "4x" ? 4 : 1;
+  // Dynamic API & WebSocket URLs (Works in dev on port 5173, unified port 8000, or deployed cloud HTTPS/WSS)
+  const isViteDev = port === "5173";
+  const API = isViteDev ? `http://${host}:8000/api` : `${proto}//${host}${port ? `:${port}` : ""}/api`;
+  const WS_URL = isViteDev ? `ws://${host}:8000/ws` : `${wsProto}//${host}${port ? `:${port}` : ""}/ws`;
 
   const pushEvent = useCallback((type, msg) => {
     setEvents((prev) => [
@@ -58,250 +85,328 @@ function App() {
     ].slice(0, 60));
   }, []);
 
-  const resetSim = useCallback(() => {
-    timeoutsRef.current.forEach(clearTimeout);
-    timeoutsRef.current = [];
-    if (lockTickRef.current) clearInterval(lockTickRef.current);
-    if (posTickRef.current) clearInterval(posTickRef.current);
-    setPhase("IDLE");
-    setPosDecision(null);
-    setLockSeconds(0);
-    setSoundboxPlaying(false);
-    setPosCountdown(0);
-    setCertificate(null);
-  }, []);
-
-  // live bank health ticker (small jitter)
-  useEffect(() => {
-    bankTickRef.current = setInterval(() => {
-      setBankHealth((h) => {
-        const copy = { ...h };
-        Object.keys(copy).forEach((k) => {
-          const b = copy[k];
-          const jitter = (Math.random() - 0.5) * 20;
-          let base = 180;
-          if (b.status === "LATENCY_SPIKE") base = 1200;
-          if (b.status === "CRASHED") base = 9999;
-          copy[k] = {
-            ...b,
-            latency: Math.max(80, Math.round(base + jitter * (b.status === "NORMAL" ? 1 : 5))),
-          };
-        });
-        return copy;
-      });
-    }, 1000);
-    return () => clearInterval(bankTickRef.current);
-  }, []);
-
-  const triggerSoundbox = () => {
+  const triggerSoundbox = useCallback((audioFile, text) => {
     setSoundboxPlaying(true);
-    setTimeout(() => setSoundboxPlaying(false), 1800);
+    setTimeout(() => setSoundboxPlaying(false), 2400);
+
+    // If on merchant/laptop, play audio
+    try {
+      if (audioFile) {
+        const a = new Audio(`/audio/${audioFile}`);
+        a.play().catch(() => playSpeech(text));
+      } else if (text) {
+        playSpeech(text);
+      }
+    } catch {
+      playSpeech(text);
+    }
+  }, []);
+
+  const playSpeech = (text) => {
+    if (!text || typeof window === "undefined" || !window.speechSynthesis) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "hi-IN";
+      u.rate = 0.95;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* ignore */
+    }
   };
 
-  const generateCertificate = useCallback(async (sc, finalStatus) => {
+  // Connect WebSocket to backend
+  useEffect(() => {
+    let ws = null;
+    let reconnectTimeout = null;
+
+    const connect = () => {
+      try {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => {
+          setConnected(true);
+          pushEvent("WS_OPEN", `Connected to ClearMoment Engine (${WS_URL})`);
+        };
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.session) {
+              setSession(data.session);
+            }
+            if (data.ledger) {
+              setLedger(data.ledger);
+            }
+            if (data.message) {
+              pushEvent(data.type, data.message);
+            }
+            // Trigger soundbox audio when alert arrives
+            if (data.session?.soundbox_alert?.audio_file) {
+              triggerSoundbox(
+                data.session.soundbox_alert.audio_file,
+                data.session.soundbox_alert.text
+              );
+            }
+          } catch {
+            /* ignore */
+          }
+        };
+        ws.onclose = () => {
+          setConnected(false);
+          reconnectTimeout = setTimeout(connect, 2000);
+        };
+        ws.onerror = () => {
+          setConnected(false);
+        };
+        wsRef.current = ws;
+      } catch {
+        reconnectTimeout = setTimeout(connect, 3000);
+      }
+    };
+
+    connect();
+
+    return () => {
+      if (ws) ws.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
+  }, [WS_URL, pushEvent, triggerSoundbox]);
+
+  // Initial fetch of session state
+  useEffect(() => {
+    fetch(`${API}/session`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.session) setSession(data.session);
+        if (data.ledger) setLedger(data.ledger);
+        if (data.issuer_health) setBankHealth(data.issuer_health);
+      })
+      .catch(() => {});
+  }, [API]);
+
+  // Actions sent from Client (Mobile) or Merchant (Laptop)
+  const sendAction = useCallback(async (endpoint, actionType) => {
     try {
-      const r = await fetch(`${API}/certificate`, {
+      const res = await fetch(`${API}/session/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: sc.amount,
-          scenario: sc.id,
-          status: finalStatus,
-        }),
+        body: JSON.stringify({}),
       });
-      const data = await r.json();
-      setCertificate(data);
-      setLedger((l) => [
-        {
-          id: uid(),
-          ref: data.dispute_ref,
-          time: nowHMS(),
-          bank: sc.bank,
-          amount: sc.amount,
-          status: finalStatus,
-        },
-        ...l,
-      ].slice(0, 20));
-    } catch (e) {
-      pushEvent("ERROR", `Certificate error: ${e.message}`);
+      const data = await res.json();
+      if (data.session) setSession(data.session);
+    } catch {
+      // Fallback: send via WebSocket if available
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ action: actionType }));
+      }
     }
+  }, [API]);
+
+  const handleSelectScenario = useCallback(async (scenarioKey) => {
+    try {
+      const res = await fetch(`${API}/session/scenario`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario: scenarioKey }),
+      });
+      const data = await res.json();
+      if (data.session) setSession(data.session);
+      toast.info(`Switched to ${scenarioKey.replace("_", " ")}`);
+    } catch {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ action: "SELECT_SCENARIO", scenario: scenarioKey }));
+      }
+    }
+  }, [API]);
+
+  const handleReset = useCallback(() => {
+    sendAction("reset", "RESET");
+    toast.success("Reset session state");
+  }, [sendAction]);
+
+  const handlePay = useCallback(() => {
+    sendAction("pay", "START_PAYMENT");
+  }, [sendAction]);
+
+  const handleUpiLitePay = useCallback(() => {
+    sendAction("upi-lite", "PAY_UPI_LITE");
+    toast.success(`₹${session.amount} settled via UPI Lite!`);
+  }, [sendAction, session.amount]);
+
+  const handlePanicRescan = useCallback(() => {
+    sendAction("panic-rescan", "PANIC_RESCAN");
+  }, [sendAction]);
+
+  const handleScanQR = useCallback(() => {
+    sendAction("scan-qr", "SCAN_STATUS_QR");
+    toast.success(`Verified Customer Token #${session.token}`);
+  }, [sendAction, session.token]);
+
+  const handleInstantRefund = useCallback(() => {
+    sendAction("instant-refund", "ISSUE_1TAP_REFUND");
+    toast.success(`₹${session.amount} Instant Refund Executed!`);
+  }, [sendAction, session.amount]);
+
+  const handleDecision = useCallback((d) => {
+    pushEvent("MERCHANT_DECISION", `Counter action: ${d}`);
+    if (d === "RELEASE_GOODS") toast.success("Goods released");
+    if (d === "TAKE_CASH_AUTO_REFUND") toast.info("Cash collected. Auto-refund armed.");
   }, [pushEvent]);
 
-  const startLockCountdown = (seconds) => {
-    setLockSeconds(seconds);
-    if (lockTickRef.current) clearInterval(lockTickRef.current);
-    lockTickRef.current = setInterval(() => {
-      setLockSeconds((s) => {
-        if (s <= 1) {
-          clearInterval(lockTickRef.current);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-  };
-
-  const runScenario = useCallback((id) => {
-    const sc = SCENARIOS[id];
-    if (!sc) return;
-    resetSim();
-    setActiveScenario(id);
-    setRunning(true);
-    pushEvent("SCENARIO_START", `${sc.label} • ₹${sc.amount} via ${sc.bank}`);
-    const timeline = buildTimeline(id, sc.amount);
-    timeline.forEach((step) => {
-      const t = setTimeout(() => {
-        setPhase(step.type);
-        pushEvent(step.type, step.msg);
-        if (step.type === "SOUNDBOX_PLAY") triggerSoundbox();
-        if (step.type === "SAFECLEAR_LOCK") startLockCountdown(30);
-        if (step.type === "HUMAN_IN_LOOP") {
-          setPosCountdown(60);
-          if (posTickRef.current) clearInterval(posTickRef.current);
-          posTickRef.current = setInterval(() => {
-            setPosCountdown((s) => {
-              if (s <= 1) {
-                clearInterval(posTickRef.current);
-                return 0;
-              }
-              return s - 1;
-            });
-          }, 1000);
-        }
-      }, step.t / speedFactor);
-      timeoutsRef.current.push(t);
-    });
-
-    const totalMs = timeline[timeline.length - 1].t / speedFactor + 400;
-    const finalT = setTimeout(() => {
-      const finalStatus = finalStatusFor(id);
-      pushEvent("CERTIFICATE", `NPCI UDIR audit certificate issued`);
-      generateCertificate(sc, finalStatus);
-      setRunning(false);
-    }, totalMs);
-    timeoutsRef.current.push(finalT);
-  }, [generateCertificate, pushEvent, resetSim, speedFactor]);
-
-  const handleDecision = (d) => {
-    setPosDecision(d);
-    pushEvent("MERCHANT_DECISION", `Counter chose ${d.replace("_", " ")}`);
-    if (d === "CASH_REFUND" && scenarioObj) {
-      pushEvent("AUTO_REFUND", `Auto-refund ₹${scenarioObj.amount} queued`);
-    }
-  };
-
-  const handleTriage = async (text) => {
-    setDispute(text);
-    setTriageResult(null);
-    pushEvent("DISPUTE_TRIAGE", `Customer: "${text}"`);
-    try {
-      const r = await fetch(`${API}/triage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, amount: scenarioObj?.amount }),
-      });
-      const data = await r.json();
-      setTriageResult(data);
-      pushEvent("TRIAGE_RESULT", `${data.category} → ${data.action}`);
-    } catch (e) {
-      pushEvent("ERROR", `Triage failed: ${e.message}`);
-    }
-  };
-
+  // Chaos controls
   const crashHDFC = () => {
     setBankHealth((h) => ({ ...h, HDFC: { ...h.HDFC, status: "CRASHED", latency: 9999, timeoutPct: 100 } }));
-    pushEvent("CHAOS_CRASH", "HDFC bank CRASHED (chaos injected)");
+    pushEvent("CHAOS_CRASH", "HDFC switch CRASHED");
   };
   const spikeSBI = () => {
     setBankHealth((h) => ({ ...h, SBI: { ...h.SBI, status: "LATENCY_SPIKE", latency: 1800, timeoutPct: 32 } }));
-    pushEvent("CHAOS_SPIKE", "SBI latency SPIKE (chaos injected)");
+    pushEvent("CHAOS_SPIKE", "SBI latency SPIKE");
   };
   const resetBanks = () => {
-    setBankHealth(makeInitialBankHealth());
-    pushEvent("CHAOS_RESET", "All banks reset to NORMAL");
+    setBankHealth({
+      HDFC: { status: "NORMAL", latency: 180, timeoutPct: 0.4 },
+      SBI:  { status: "LATENCY_SPIKE", latency: 1250, timeoutPct: 4.8 },
+      ICICI:{ status: "NORMAL", latency: 150, timeoutPct: 0.3 },
+      Axis: { status: "NORMAL", latency: 260, timeoutPct: 0.8 },
+    });
+    pushEvent("CHAOS_RESET", "Banks reset to normal");
   };
 
-  const copilotCtx = useMemo(() => ({
-    scenario: activeScenario || "none",
-    amount: scenarioObj?.amount || 0,
-    phase,
-    bank: scenarioObj?.bank || "none",
-    pos_decision: posDecision || "none",
-  }), [activeScenario, scenarioObj, phase, posDecision]);
-
   return (
-    <div className="safeclear-canvas" data-testid="safeclear-root">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <Toaster position="top-right" richColors />
-      <TopBar speed={speed} onSpeedChange={setSpeed} live={true} />
 
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 space-y-5">
-        <ScenarioBar active={activeScenario} running={running} onRun={runScenario} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Column 1 - Customer */}
-          <div className="lg:col-span-3">
-            <PhoneMockup
-              scenario={scenarioObj}
-              phase={phase}
-              lockSeconds={lockSeconds}
-              dispute={dispute}
-              onTriage={handleTriage}
-              triageResult={triageResult}
-            />
-          </div>
-
-          {/* Column 2 - Merchant Counter */}
-          <div className="lg:col-span-5 space-y-5">
-            <div className="card-surface p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="font-display font-bold text-[#002970]">Merchant Counter</div>
-                  <div className="text-[11px] text-slate-500">POS · Soundbox · Live Ledger</div>
-                </div>
-                <span className="font-mono-ui text-[10px] uppercase tracking-wider text-slate-500">
-                  Counter #3
-                </span>
-              </div>
-              <POSTerminal
-                amount={scenarioObj?.amount || 0}
-                status={phase}
-                countdown={posCountdown}
-                onDecision={handleDecision}
-                decision={posDecision}
-              />
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Soundbox amount={scenarioObj?.amount || 0} playing={soundboxPlaying} onPlay={triggerSoundbox} />
-                <LedgerFeed entries={ledger} />
-              </div>
-            </div>
-          </div>
-
-          {/* Column 3 - AI Engine */}
-          <div className="lg:col-span-4 space-y-5">
-            <div className="card-surface p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-display font-bold text-[#002970]">Merchant AI Copilot & Engine</div>
-                  <div className="text-[11px] text-slate-500">Ollama Copilot · Bank Health · Chaos</div>
-                </div>
-                <span className="font-mono-ui text-[10px] uppercase tracking-wider text-[#7C3AED] bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">
-                  AI ACTIVE
-                </span>
-              </div>
-              <AICopilot apiBase={API} context={copilotCtx} />
-              <BankHealth health={bankHealth} />
-              <ChaosInjector onCrashHDFC={crashHDFC} onSpikeSBI={spikeSBI} onReset={resetBanks} />
-            </div>
-            <EventLog events={events} />
-          </div>
+      {/* Floating Top Mode Switcher Bar */}
+      <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#00BAF2] tracking-wider uppercase font-mono-ui">
+            Paytm ClearMoment
+          </span>
+          <span className="text-slate-400">|</span>
+          <span className="text-slate-300 hidden sm:inline">Track 2 Multi-Device Sync</span>
         </div>
 
-        <CertificateCard cert={certificate} />
+        <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button
+            onClick={() => setViewMode("merchant")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all press-shrink ${
+              viewMode === "merchant"
+                ? "bg-[#002970] text-white shadow"
+                : "text-slate-300 hover:text-white"
+            }`}
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            <span>Laptop (Merchant)</span>
+          </button>
 
-        <footer className="text-center text-[11px] text-slate-500 pb-6">
-          Paytm SafeClear · NPCI UDIR Autonomous Resolution Engine · Demo build
-        </footer>
-      </main>
+          <button
+            onClick={() => setViewMode("client")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all press-shrink ${
+              viewMode === "client"
+                ? "bg-emerald-600 text-white shadow"
+                : "text-slate-300 hover:text-white"
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>Mobile (Customer)</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode("split")}
+            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all press-shrink ${
+              viewMode === "split"
+                ? "bg-violet-600 text-white shadow"
+                : "text-slate-300 hover:text-white"
+            }`}
+          >
+            <Columns className="w-3.5 h-3.5" />
+            <span>Split Demo</span>
+          </button>
+        </div>
+      </div>
+
+      {/* RENDER VIEW ACCORDING TO USER MODE */}
+      {viewMode === "client" && (
+        <ClientView
+          session={session}
+          onPay={handlePay}
+          onUpiLitePay={handleUpiLitePay}
+          onPanicRescan={handlePanicRescan}
+          onReset={handleReset}
+          onSelectScenario={handleSelectScenario}
+          connected={connected}
+        />
+      )}
+
+      {viewMode === "merchant" && (
+        <MerchantView
+          session={session}
+          events={events}
+          ledger={ledger}
+          certificate={certificate}
+          bankHealth={bankHealth}
+          soundboxPlaying={soundboxPlaying}
+          onPlaySoundbox={() =>
+            triggerSoundbox(
+              session?.soundbox_alert?.audio_file,
+              session?.soundbox_alert?.text
+            )
+          }
+          onScanQR={handleScanQR}
+          onInstantRefund={handleInstantRefund}
+          onDecision={handleDecision}
+          onReset={handleReset}
+          onSelectScenario={handleSelectScenario}
+          onCrashHDFC={crashHDFC}
+          onSpikeSBI={spikeSBI}
+          onResetBanks={resetBanks}
+          connected={connected}
+          apiBase={API}
+        />
+      )}
+
+      {viewMode === "split" && (
+        <div className="grid grid-cols-1 md:grid-cols-12 min-h-screen">
+          <div className="md:col-span-5 bg-slate-200 p-4 flex items-center justify-center border-r border-slate-300">
+            <div className="w-full max-w-sm rounded-[36px] overflow-hidden shadow-2xl border-4 border-slate-900 bg-white">
+              <ClientView
+                session={session}
+                onPay={handlePay}
+                onUpiLitePay={handleUpiLitePay}
+                onPanicRescan={handlePanicRescan}
+                onReset={handleReset}
+                onSelectScenario={handleSelectScenario}
+                connected={connected}
+              />
+            </div>
+          </div>
+          <div className="md:col-span-7">
+            <MerchantView
+              session={session}
+              events={events}
+              ledger={ledger}
+              certificate={certificate}
+              bankHealth={bankHealth}
+              soundboxPlaying={soundboxPlaying}
+              onPlaySoundbox={() =>
+                triggerSoundbox(
+                  session?.soundbox_alert?.audio_file,
+                  session?.soundbox_alert?.text
+                )
+              }
+              onScanQR={handleScanQR}
+              onInstantRefund={handleInstantRefund}
+              onDecision={handleDecision}
+              onReset={handleReset}
+              onSelectScenario={handleSelectScenario}
+              onCrashHDFC={crashHDFC}
+              onSpikeSBI={spikeSBI}
+              onResetBanks={resetBanks}
+              connected={connected}
+              apiBase={API}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

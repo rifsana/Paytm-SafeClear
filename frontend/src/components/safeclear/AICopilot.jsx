@@ -1,20 +1,55 @@
-import { useRef, useState } from "react";
-import { Mic, MicOff, Send, Sparkles } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Sparkles, Send, Mic, ShieldAlert, CheckCircle2, ChevronRight, BookOpen } from "lucide-react";
 
 const CHIPS = [
-  "Payment attka hai kya?",
-  "Auto-refund status verify karo",
-  "₹1200 Axis timeout ka kya karun?",
-  "Soundbox voice replay karo",
+  "Payment atka hai kya?",
+  "Rahul ka token 4821 status?",
+  "Sneha ne 400 do baar diya, refund kaise hoga?",
+  "Zero Paisa Kata verdict explain karo",
+];
+
+const CODE_SANDBOX = [
+  {
+    code: "ZM",
+    name: "Incorrect PIN",
+    debit: "❌ NEVER",
+    legacy: "If deducted, refund in 3-5 days",
+    sarvam: "PIN galat tha. Paisa bilkul nahi kata. Turant dobara koshish karein.",
+  },
+  {
+    code: "Z9",
+    name: "Low Balance",
+    debit: "❌ NEVER",
+    legacy: "If deducted, refund in 3-5 days",
+    sarvam: "Account mein balance kam tha. Paisa nahi kata. UPI Lite ya doosra bank chunein.",
+  },
+  {
+    code: "U16",
+    name: "Daily Limit",
+    debit: "❌ NEVER",
+    legacy: "If deducted, refund in 3-5 days",
+    sarvam: "Rozana limit puri ho gayi hai. Kisi aur account ya card se pay karein.",
+  },
+  {
+    code: "U68",
+    name: "Bank Timeout",
+    debit: "⏳ AMBIGUOUS",
+    legacy: "If deducted, refund in 3-5 days",
+    sarvam: "Bank se confirmation baki hai. Dobara scan MAT karein. 30 second ruko.",
+  },
 ];
 
 export const AICopilot = ({ apiBase, context }) => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    {
+      role: "ai",
+      text: "Namaste! Main Paytm ClearMoment Sarvam AI Copilot hoon. Counter par pending payment, duplicate debits, ya bank latency ke baare mein kuch bhi poochiye.",
+    },
+  ]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const recognitionRef = useRef(null);
-  const sessionIdRef = useRef(`copilot-${Math.random().toString(36).slice(2, 10)}`);
+  const [selectedCode, setSelectedCode] = useState(null);
+  const sessionIdRef = useRef(`cm-copilot-${Math.random().toString(36).slice(2, 8)}`);
 
   const send = async (text) => {
     if (!text.trim() || streaming) return;
@@ -47,7 +82,7 @@ export const AICopilot = ({ apiBase, context }) => {
     } catch (e) {
       setMessages((m) => {
         const copy = [...m];
-        copy[copy.length - 1] = { role: "ai", text: `[error: ${e.message}]` };
+        copy[copy.length - 1] = { role: "ai", text: `[Error: ${e.message}]` };
         return copy;
       });
     } finally {
@@ -55,136 +90,132 @@ export const AICopilot = ({ apiBase, context }) => {
     }
   };
 
-  const toggleRecord = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      alert("Voice input requires Chrome/Edge. Please type instead.");
-      return;
-    }
-    if (recording && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setRecording(false);
-      return;
-    }
-    const rec = new SR();
-    rec.lang = "en-IN";
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.onresult = (ev) => {
-      const t = ev.results[0][0].transcript;
-      setInput(t);
-      setRecording(false);
-      send(t);
-    };
-    rec.onerror = () => setRecording(false);
-    rec.onend = () => setRecording(false);
-    recognitionRef.current = rec;
-    rec.start();
-    setRecording(true);
-  };
-
   return (
     <div
       data-testid="ai-copilot"
-      className="rounded-2xl bg-gradient-to-b from-violet-50 to-white border border-violet-200 p-4"
+      className="rounded-2xl bg-gradient-to-b from-violet-50/70 to-white border border-violet-200 p-4 shadow-sm"
     >
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-[#7C3AED] flex items-center justify-center shadow">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#7C3AED] to-fuchsia-600 flex items-center justify-center shadow">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div>
-            <div className="font-display font-bold text-[#7C3AED] text-sm">Ollama AI Voice Copilot</div>
-            <div className="text-[10px] text-slate-500 font-mono-ui">Claude Sonnet · Hinglish mode</div>
+            <div className="font-display font-bold text-[#7C3AED] text-sm leading-tight">
+              Sarvam AI Intelligence Core
+            </div>
+            <div className="text-[10px] text-slate-500 font-mono-ui">
+              sarvam-105b · sarvam-m intent guard
+            </div>
           </div>
         </div>
-        <button
-          data-testid="copilot-mic-btn"
-          onClick={toggleRecord}
-          className={`press-shrink w-11 h-11 rounded-full flex items-center justify-center shadow-md ${
-            recording ? "bg-rose-500 text-white" : "bg-white text-[#7C3AED] border border-violet-200 hover:bg-violet-50"
-          }`}
-          title={recording ? "Stop recording" : "Start voice input"}
-        >
-          {recording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-        </button>
+        <span className="font-mono-ui text-[9px] uppercase tracking-wider text-violet-700 bg-violet-100 px-2 py-0.5 rounded-full font-bold">
+          Sovereign AI
+        </span>
       </div>
 
-      {/* visualizer */}
-      <div className="mt-3 flex items-end justify-center gap-1 h-10">
-        {Array.from({ length: 24 }).map((_, i) => (
+      {/* Sarvam "Why It Failed" Code Sandbox (Interactive Blueprint Component) */}
+      <div className="mb-3 p-3 rounded-xl bg-white border border-violet-100 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#002970]">
+            <BookOpen className="w-3.5 h-3.5 text-[#7C3AED]" />
+            <span>Pillar 2: Error Code Transformer</span>
+          </div>
+          <span className="text-[9px] text-slate-400 font-mono-ui">Tap code to test</span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-1.5">
+          {CODE_SANDBOX.map((item) => (
+            <button
+              key={item.code}
+              onClick={() => setSelectedCode(item)}
+              className={`p-1.5 rounded-lg border text-center transition-all min-h-[44px] ${
+                selectedCode?.code === item.code
+                  ? "bg-[#7C3AED] text-white border-[#7C3AED] shadow"
+                  : "bg-slate-50 hover:bg-violet-50 border-slate-200 text-slate-700"
+              }`}
+            >
+              <div className="font-mono-ui font-black text-xs">{item.code}</div>
+              <div className="text-[8px] leading-tight opacity-90 truncate">{item.name}</div>
+            </button>
+          ))}
+        </div>
+
+        {selectedCode && (
+          <div className="mt-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] space-y-1.5">
+            <div className="flex items-center justify-between border-b border-slate-200/60 pb-1">
+              <span className="font-mono-ui font-bold text-[#002970]">{selectedCode.code}: {selectedCode.name}</span>
+              <span className="font-mono-ui font-bold text-xs text-rose-600">Money Moved? {selectedCode.debit}</span>
+            </div>
+            <div className="text-[10px] text-rose-700">
+              <span className="font-bold line-through text-slate-400 mr-1">"{selectedCode.legacy}"</span>
+              <span className="font-semibold text-rose-600">(Blanket Lie)</span>
+            </div>
+            <div className="text-[11px] text-emerald-800 font-medium bg-emerald-50 p-1.5 rounded border border-emerald-200">
+              <span className="font-bold">Sarvam AI Direct Verdict:</span> "{selectedCode.sarvam}"
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Chat Messages */}
+      <div className="max-h-44 overflow-y-auto space-y-2 pr-1 text-xs mb-3">
+        {messages.map((m, i) => (
           <div
             key={i}
-            className={`copilot-bar ${recording || streaming ? "rec" : ""}`}
-            style={{
-              height: `${20 + ((i * 17) % 60)}%`,
-              animationDelay: `${i * 55}ms`,
-              background: recording || streaming ? "#7C3AED" : "rgba(124,58,237,0.35)",
-            }}
-          />
+            className={`p-2.5 rounded-xl ${
+              m.role === "user"
+                ? "bg-[#002970] text-white ml-6 text-right"
+                : "bg-white border border-slate-200 text-slate-800 mr-4 shadow-sm"
+            }`}
+          >
+            <div className="text-[9px] font-mono-ui opacity-70 mb-0.5 uppercase">
+              {m.role === "user" ? "Merchant / Judge" : "Sarvam AI"}
+            </div>
+            <div className="leading-relaxed font-medium">{m.text}</div>
+          </div>
         ))}
       </div>
 
-      {/* chips */}
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      {/* Suggested Chips */}
+      <div className="flex flex-wrap gap-1 mb-2.5">
         {CHIPS.map((c) => (
           <button
             key={c}
-            data-testid={`copilot-chip-${c.slice(0, 12).replace(/\s+/g, "-").toLowerCase()}`}
             onClick={() => send(c)}
-            disabled={streaming}
-            className="press-shrink text-[11px] px-2.5 py-1 rounded-full bg-white border border-violet-200 text-[#7C3AED] font-medium hover:bg-violet-50 disabled:opacity-50"
+            className="text-[10px] px-2 py-1 rounded-full bg-white border border-violet-200 text-[#7C3AED] hover:bg-violet-100 font-medium press-shrink transition-colors"
           >
             {c}
           </button>
         ))}
       </div>
 
-      {/* chat */}
-      <div className="mt-3 bg-white rounded-xl border border-violet-100 h-44 overflow-y-auto thin-scroll p-3 space-y-2">
-        {messages.length === 0 && (
-          <div className="text-xs text-slate-500 italic">
-            Say "Payment atka hai kya?" or tap a chip to ask the copilot.
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            data-testid={`copilot-msg-${i}`}
-            className={`text-sm ${m.role === "user" ? "text-[#002970]" : "text-slate-800"}`}
-          >
-            <span className="font-mono-ui text-[9px] uppercase mr-1 opacity-60">
-              {m.role === "user" ? "you" : "ai"}
-            </span>
-            {m.text || <span className="opacity-50">thinking…</span>}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 flex gap-2">
+      {/* Input */}
+      <div className="flex gap-2">
         <input
-          data-testid="copilot-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              send(input);
+            if (e.key === "Enter" && input.trim()) {
+              send(input.trim());
               setInput("");
             }
           }}
-          placeholder="Hinglish me pucho…"
-          className="flex-1 text-sm px-3 py-2 rounded-xl border border-violet-200 focus:border-[#7C3AED] outline-none"
+          placeholder="Ask Sarvam Copilot in Hinglish or English..."
+          className="flex-1 text-xs px-3 py-2 rounded-xl border border-slate-200 focus:border-[#7C3AED] focus:ring-2 focus:ring-violet-100 outline-none bg-white min-h-[44px]"
         />
         <button
-          data-testid="copilot-send-btn"
           onClick={() => {
-            send(input);
-            setInput("");
+            if (input.trim()) {
+              send(input.trim());
+              setInput("");
+            }
           }}
-          disabled={streaming || !input.trim()}
-          className="press-shrink px-3 py-2 rounded-xl bg-[#7C3AED] text-white font-semibold text-sm disabled:opacity-50 flex items-center gap-1"
+          disabled={streaming}
+          className="min-h-[44px] px-3.5 py-2 rounded-xl bg-[#7C3AED] text-white hover:bg-violet-700 text-xs font-semibold press-shrink flex items-center gap-1 shadow-sm"
         >
-          <Send className="w-3.5 h-3.5" /> Send
+          <Send className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
