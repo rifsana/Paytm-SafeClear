@@ -158,10 +158,10 @@ class ClearMomentState:
         self.active_connections: Set[WebSocket] = set()
         self.event_log: List[Dict] = []
         self.issuer_health: Dict[str, Dict] = {
-            "HDFC": {"timeout_rate": 2.1, "p95_latency_ms": 850, "status": "degraded"},
-            "SBI":  {"timeout_rate": 1.2, "p95_latency_ms": 650, "status": "healthy"},
-            "ICICI":{"timeout_rate": 0.8, "p95_latency_ms": 480, "status": "healthy"},
-            "Axis": {"timeout_rate": 1.5, "p95_latency_ms": 720, "status": "healthy"},
+            "HDFC": {"timeout_rate": 2.1, "timeoutPct": 2.1, "p95_latency_ms": 850, "latency": 850, "status": "degraded"},
+            "SBI":  {"timeout_rate": 1.2, "timeoutPct": 1.2, "p95_latency_ms": 650, "latency": 650, "status": "healthy"},
+            "ICICI":{"timeout_rate": 0.8, "timeoutPct": 0.8, "p95_latency_ms": 480, "latency": 480, "status": "healthy"},
+            "Axis": {"timeout_rate": 1.5, "timeoutPct": 1.5, "p95_latency_ms": 720, "latency": 720, "status": "healthy"},
         }
         self.session = self.make_initial_session("SCENARIO_A")
         self.ledger: List[Dict] = []

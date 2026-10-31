@@ -53,10 +53,10 @@ export const uid = () => Math.random().toString(36).slice(2, 10).toUpperCase();
 
 export function makeInitialBankHealth() {
   return {
-    HDFC: { status: "NORMAL", latency: 180, timeoutPct: 0.4 },
-    SBI:  { status: "LATENCY_SPIKE", latency: 1250, timeoutPct: 4.8 },
-    ICICI:{ status: "NORMAL", latency: 150, timeoutPct: 0.3 },
-    AXIS: { status: "NORMAL", latency: 260, timeoutPct: 0.8 },
+    HDFC: { status: "NORMAL", latency: 180, p95_latency_ms: 180, timeoutPct: 0.4, timeout_rate: 0.4 },
+    SBI:  { status: "LATENCY_SPIKE", latency: 1250, p95_latency_ms: 1250, timeoutPct: 4.8, timeout_rate: 4.8 },
+    ICICI:{ status: "NORMAL", latency: 150, p95_latency_ms: 150, timeoutPct: 0.3, timeout_rate: 0.3 },
+    AXIS: { status: "NORMAL", latency: 260, p95_latency_ms: 260, timeoutPct: 0.8, timeout_rate: 0.8 },
   };
 }
 

@@ -61,10 +61,10 @@ function App() {
   const [certificate, setCertificate] = useState(null);
   const [soundboxPlaying, setSoundboxPlaying] = useState(false);
   const [bankHealth, setBankHealth] = useState({
-    HDFC: { status: "NORMAL", latency: 180, timeoutPct: 0.4 },
-    SBI:  { status: "LATENCY_SPIKE", latency: 1250, timeoutPct: 4.8 },
-    ICICI:{ status: "NORMAL", latency: 150, timeoutPct: 0.3 },
-    Axis: { status: "NORMAL", latency: 260, timeoutPct: 0.8 },
+    HDFC: { status: "NORMAL", latency: 180, p95_latency_ms: 180, timeoutPct: 0.4, timeout_rate: 0.4 },
+    SBI:  { status: "LATENCY_SPIKE", latency: 1250, p95_latency_ms: 1250, timeoutPct: 4.8, timeout_rate: 4.8 },
+    ICICI:{ status: "NORMAL", latency: 150, p95_latency_ms: 150, timeoutPct: 0.3, timeout_rate: 0.3 },
+    Axis: { status: "NORMAL", latency: 260, p95_latency_ms: 260, timeoutPct: 0.8, timeout_rate: 0.8 },
   });
 
   const wsRef = useRef(null);
@@ -254,19 +254,25 @@ function App() {
 
   // Chaos controls
   const crashHDFC = () => {
-    setBankHealth((h) => ({ ...h, HDFC: { ...h.HDFC, status: "CRASHED", latency: 9999, timeoutPct: 100 } }));
+    setBankHealth((h) => ({
+      ...h,
+      HDFC: { ...h?.HDFC, status: "CRASHED", latency: 9999, p95_latency_ms: 9999, timeoutPct: 100, timeout_rate: 100 }
+    }));
     pushEvent("CHAOS_CRASH", "HDFC switch CRASHED");
   };
   const spikeSBI = () => {
-    setBankHealth((h) => ({ ...h, SBI: { ...h.SBI, status: "LATENCY_SPIKE", latency: 1800, timeoutPct: 32 } }));
+    setBankHealth((h) => ({
+      ...h,
+      SBI: { ...h?.SBI, status: "LATENCY_SPIKE", latency: 1800, p95_latency_ms: 1800, timeoutPct: 32, timeout_rate: 32 }
+    }));
     pushEvent("CHAOS_SPIKE", "SBI latency SPIKE");
   };
   const resetBanks = () => {
     setBankHealth({
-      HDFC: { status: "NORMAL", latency: 180, timeoutPct: 0.4 },
-      SBI:  { status: "LATENCY_SPIKE", latency: 1250, timeoutPct: 4.8 },
-      ICICI:{ status: "NORMAL", latency: 150, timeoutPct: 0.3 },
-      Axis: { status: "NORMAL", latency: 260, timeoutPct: 0.8 },
+      HDFC: { status: "NORMAL", latency: 180, p95_latency_ms: 180, timeoutPct: 0.4, timeout_rate: 0.4 },
+      SBI:  { status: "LATENCY_SPIKE", latency: 1250, p95_latency_ms: 1250, timeoutPct: 4.8, timeout_rate: 4.8 },
+      ICICI:{ status: "NORMAL", latency: 150, p95_latency_ms: 150, timeoutPct: 0.3, timeout_rate: 0.3 },
+      Axis: { status: "NORMAL", latency: 260, p95_latency_ms: 260, timeoutPct: 0.8, timeout_rate: 0.8 },
     });
     pushEvent("CHAOS_RESET", "Banks reset to normal");
   };
