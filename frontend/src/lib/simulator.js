@@ -1,4 +1,4 @@
-// Client-side simulation state machine for Paytm ClearMoment (Track 2)
+// Client-side simulation state machine for Paytm SafeClear (Track 2)
 // Humanizing the Ambiguous 60 Seconds of UPI Point-of-Sale Payments
 // Powered by Sarvam AI (sarvam-105b, bulbul-v4-flash, saaras-v4, sarvam-m)
 
@@ -60,7 +60,7 @@ export function makeInitialBankHealth() {
   };
 }
 
-// Build the ordered event timeline for ClearMoment demo scenarios (in virtual ms)
+// Build the ordered event timeline for SafeClear demo scenarios (in virtual ms)
 export function buildTimeline(scenarioId, amount) {
   if (scenarioId === "SCENARIO_A") {
     return [

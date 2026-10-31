@@ -66,7 +66,7 @@ export const MerchantView = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-display text-xl font-extrabold tracking-tight text-[#002970]">
-                  Paytm <span className="text-[#00BAF2]">ClearMoment</span>
+                  Paytm <span className="text-[#00BAF2]">SafeClear</span>
                 </span>
                 <span className="font-mono-ui text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-[#7C3AED] border border-violet-200">
                   Merchant POS Mode

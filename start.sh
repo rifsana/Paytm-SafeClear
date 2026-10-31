@@ -1,11 +1,11 @@
 #!/bin/bash
-# Paytm ClearMoment — Start Script (macOS / Linux)
+# Paytm SafeClear — Start Script (macOS / Linux)
 # Track 2: AI-Powered Financial Journeys
 
 set -e
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "🚀 Starting Paytm ClearMoment..."
+echo "🚀 Starting Paytm SafeClear..."
 
 # Check / create backend virtual environment
 if [ ! -d "$ROOT_DIR/backend/.venv" ]; then

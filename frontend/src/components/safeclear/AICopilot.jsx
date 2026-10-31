@@ -43,7 +43,7 @@ export const AICopilot = ({ apiBase, context }) => {
   const [messages, setMessages] = useState([
     {
       role: "ai",
-      text: "Namaste! Main Paytm ClearMoment Sarvam AI Copilot hoon. Counter par pending payment, duplicate debits, ya bank latency ke baare mein kuch bhi poochiye.",
+      text: "Namaste! Main Paytm SafeClear Sarvam AI Copilot hoon. Counter par pending payment, duplicate debits, ya bank latency ke baare mein kuch bhi poochiye.",
     },
   ]);
   const [input, setInput] = useState("");

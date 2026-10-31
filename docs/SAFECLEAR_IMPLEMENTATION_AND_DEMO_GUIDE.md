@@ -1,4 +1,4 @@
-# 🚀 Paytm ClearMoment: Comprehensive Implementation & Live Demo Guide
+# 🚀 Paytm SafeClear: Comprehensive Implementation & Live Demo Guide
 ### *Track 2: AI-Powered Financial Journeys — Humanizing the Ambiguous 60 Seconds of UPI Point-of-Sale Payments*
 **Powered by Sarvam AI (`sarvam-105b`, `bulbul-v4-flash`, `saaras-v4`, `sarvam-m`)**
 
@@ -21,13 +21,13 @@ UPI is technically resilient, but the **human experience collapses at the moment
 - Fintech apps display a lazy catch-all hedging lie:  
   > *"Payment Failed. If money was deducted from your account, it will be refunded within 3-5 business days."*
 
-**Paytm ClearMoment** fixes this exact moment of truth using **Sarvam AI** and a **Dynamic Status QR protocol** to turn silent panic into transparent, human guidance across both sides of the physical counter.
+**Paytm SafeClear** fixes this exact moment of truth using **Sarvam AI** and a **Dynamic Status QR protocol** to turn silent panic into transparent, human guidance across both sides of the physical counter.
 
 ---
 
 ## 👥 2. The Dual-Sided Multi-Device Architecture
 
-ClearMoment treats payment failure not as an isolated app error, but as an **asymmetric communication breakdown between two humans across a physical counter**:
+SafeClear treats payment failure not as an isolated app error, but as an **asymmetric communication breakdown between two humans across a physical counter**:
 
 ```
 ┌──────────────────────────────────────────────┐       ┌──────────────────────────────────────────────┐
@@ -58,7 +58,7 @@ ClearMoment treats payment failure not as an isolated app error, but as an **asy
 
 ## 🎬 3. Master Live Demo Scenarios & Step-by-Step Execution
 
-ClearMoment is built for **live, manual counter performance** (no fake timer animations):
+SafeClear is built for **live, manual counter performance** (no fake timer animations):
 
 ### 🍞 Scenario A: The False Alarm (`Z9` Insufficient Balance $\rightarrow$ 1-Tap UPI Lite)
 1. **On Mobile Phone**:
@@ -113,7 +113,7 @@ ClearMoment is built for **live, manual counter performance** (no fake timer ani
 
 ## 🤖 4. The Sarvam AI Specification
 
-| Component | Model | Role in ClearMoment | Latency |
+| Component | Model | Role in SafeClear | Latency |
 | :--- | :--- | :--- | :--- |
 | **Failure Explainer** | `sarvam-105b` | Maps 40+ raw ISO/NPCI error codes (`ZM`, `Z9`, `U16`, `U68`, `RB`, `91`) into clear, vernacular explanations in Hindi, Hinglish, Tamil, Telugu, and English. | ~300ms |
 | **Soundbox Voice** | `bulbul-v4-flash` | Sub-250ms text-to-speech tailored for Indian accents and clean rupee (`₹`) pronunciation. Never announces success on pending state. | <250ms |

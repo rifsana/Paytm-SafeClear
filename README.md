@@ -1,4 +1,4 @@
-# Paytm ClearMoment 🚀⚡
+# Paytm SafeClear 🚀⚡
 > **Track 2: AI-Powered Financial Journeys — Humanizing the Ambiguous 60 Seconds of UPI Point-of-Sale Payments**  
 > *Powered by Sarvam AI (`sarvam-105b`, `bulbul-v4-flash`, `saaras-v4`, `sarvam-m`)*
 
@@ -14,7 +14,7 @@ UPI handles over 14 billion transactions monthly with incredible resilience, yet
 Fintech apps currently use lazy catch-all hedging:  
 > *"Payment Failed. If money was deducted from your account, it will be refunded within 3-5 business days."*
 
-**Paytm ClearMoment** fixes this moment of truth using sovereign Indian AI (**Sarvam AI**) and a **Dynamic Status QR Protocol** to turn silent panic into transparent, human guidance.
+**Paytm SafeClear** fixes this moment of truth using sovereign Indian AI (**Sarvam AI**) and a **Dynamic Status QR Protocol** to turn silent panic into transparent, human guidance.
 
 ---
 
@@ -40,13 +40,13 @@ Fintech apps currently use lazy catch-all hedging:
 - **1-Tap Instant Refund**: If duplicate occurs, surfaces a prominent 1-tap refund button on merchant POS with instant IMPS/UPI credit and sealed UDIR audit docket.
 
 ### 4. ⚡ Pillar 4: Intelligent Fallback (UPI Lite & Self-Healing)
-- If primary bank account fails due to balance (`Z9`) or bank server latency, ClearMoment surfaces a **1-tap checkout via on-device UPI Lite** (up to ₹500, zero core banking latency).
+- If primary bank account fails due to balance (`Z9`) or bank server latency, SafeClear surfaces a **1-tap checkout via on-device UPI Lite** (up to ₹500, zero core banking latency).
 
 ---
 
 ## 🎬 Master Demo Scenarios
 
-| Scenario | Trigger | What Current Apps Do | What ClearMoment Does (Sarvam AI) |
+| Scenario | Trigger | What Current Apps Do | What SafeClear Does (Sarvam AI) |
 | :--- | :--- | :--- | :--- |
 | **Scenario A: The False Alarm** | ₹350 at bakery; bank returns `Z9` (Insufficient Balance) | Silent soundbox. Customer panics: *"Did my ₹350 get deducted?"* | Green Badge: **"Zero Paisa Kata"**. Sarvam explainer explains why. Surfaces **"1-Tap Pay ₹350 via UPI Lite"**. Payment completes in 2s. Soundbox rings! |
 | **Scenario B: Bank Server Timeout** | ₹250 at sweet shop; SBI switch latency spike (`U68`) | Counter standoff. Merchant refuses sweets; customer shows debit SMS. | Phone flips to **Dynamic Status QR [Token #4821]**. Soundbox: *"Rahul se ₹250 verify ho raha hai. Token 4821. Saman na dein."* Merchant scans QR. Switch confirms. Turns Green! |

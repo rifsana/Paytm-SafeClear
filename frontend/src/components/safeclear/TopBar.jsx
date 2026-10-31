@@ -3,7 +3,7 @@ import { Sparkles, Zap, ShieldCheck } from "lucide-react";
 export const TopBar = ({ speed, onSpeedChange, live }) => {
   return (
     <header
-      data-testid="clearmoment-topbar"
+      data-testid="safeclear-topbar"
       className="w-full bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm"
     >
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
@@ -14,7 +14,7 @@ export const TopBar = ({ speed, onSpeedChange, live }) => {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-[#002970] leading-none">
-                Paytm <span className="text-[#00BAF2]">ClearMoment</span>
+                Paytm <span className="text-[#00BAF2]">SafeClear</span>
               </span>
               <span className="font-mono-ui text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-[#7C3AED] border border-violet-200">
                 Track 2 · Sarvam AI

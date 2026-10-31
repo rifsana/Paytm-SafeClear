@@ -1,4 +1,4 @@
-# 🚀 Paytm ClearMoment: Master Blueprint (Track 2)
+# 🚀 Paytm SafeClear: Master Blueprint (Track 2)
 ### *Humanizing the Ambiguous 60 Seconds of UPI Point-of-Sale Payments*
 
 ---
@@ -18,7 +18,7 @@ UPI is technically resilient, but the **human experience collapses completely at
 - The merchant's Soundbox remains completely silent.
 - The retail counter enters a 60-second standoff: queues stall, merchants demand a second payment, and panicked customers pay twice, causing accidental duplicate debits.
 
-**ClearMoment** fixes this exact "moment of truth" using **Sarvam AI (Indian-language LLM & sub-250ms voice synthesis)** and a **Dynamic Status QR protocol** to turn silent panic into transparent, human guidance.
+**SafeClear** fixes this exact "moment of truth" using **Sarvam AI (Indian-language LLM & sub-250ms voice synthesis)** and a **Dynamic Status QR protocol** to turn silent panic into transparent, human guidance.
 
 ---
 
@@ -32,7 +32,7 @@ Fintech apps display a generic hedging disclaimer across nearly every failure:
 > *"Payment Failed. If money was deducted from your account, it will be refunded within 3-5 business days."*
 
 #### Why apps do this vs. The Technical Reality:
-| Error Code | Meaning | Did Money Actually Move? | What Apps Today Say | What ClearMoment Says (Sarvam AI) |
+| Error Code | Meaning | Did Money Actually Move? | What Apps Today Say | What SafeClear Says (Sarvam AI) |
 | :--- | :--- | :--- | :--- | :--- |
 | **`ZM`** | Incorrect UPI PIN | ❌ **NEVER** (Pre-debit decline) | *"If deducted, refund in 3-5 days"* | **"PIN galat tha. Paisa bilkul nahi kata. Turant dobara koshish karein."** |
 | **`Z9`** | Insufficient Balance | ❌ **NEVER** (Pre-debit decline) | *"If deducted, refund in 3-5 days"* | **"Account mein balance kam tha. Paisa nahi kata. UPI Lite ya doosra bank chunein."** |
@@ -45,7 +45,7 @@ Because existing apps use lazy catch-all disclaimers, customers **mistrust the f
 
 ## 👥 3. The Dual-Sided Experience (Merchant UX + Client UX)
 
-The core breakthrough of ClearMoment is treating a payment failure not as an isolated app error, but as an **asymmetric communication breakdown between two humans across a physical counter**.
+The core breakthrough of SafeClear is treating a payment failure not as an isolated app error, but as an **asymmetric communication breakdown between two humans across a physical counter**.
 
 ```
 ┌──────────────────────────────────────────────┐       ┌──────────────────────────────────────────────┐
@@ -74,7 +74,7 @@ The core breakthrough of ClearMoment is treating a payment failure not as an iso
 #### 🏷️ Counter-Proof Pending Notification (With Identifier Note & 4-Digit Token)
 At a busy counter (e.g., a tea stall or grocery queue), 3 people might pay around the same time. If a merchant simply receives *"Payment Pending ₹200"*, they have no idea **which customer** is stuck.
 
-ClearMoment solves this with **Instant Multi-Modal Identification**:
+SafeClear solves this with **Instant Multi-Modal Identification**:
 1. **The 4-Digit Counter Token**:
    - The moment a payment enters `PENDING`, both the customer's phone and the merchant's screen display an identical high-contrast **4-digit Counter Token** (e.g., `Token #4821`).
    - The merchant glances at the customer's phone or asks *"Token number kya hai?"* $\rightarrow$ instant match in 1 second.
@@ -101,7 +101,7 @@ ClearMoment solves this with **Instant Multi-Modal Identification**:
 
 ### 📱 B. Client-Side UX: Deep "Why It Failed" Transparency & Smart Recovery
 
-Instead of a generic screen saying *"Payment Failed — if deducted it will be refunded"*, ClearMoment uses **Sarvam AI (`sarvam-105b`)** to give the customer complete transparency:
+Instead of a generic screen saying *"Payment Failed — if deducted it will be refunded"*, SafeClear uses **Sarvam AI (`sarvam-105b`)** to give the customer complete transparency:
 
 #### 1. Instant "Money Status" Badge
 - **Green Badge**: *"Zero Paisa Kata"* (Your account was NOT debited).
@@ -191,7 +191,7 @@ We standardize exclusively on **Sarvam AI** for an end-to-end sovereign Indian A
 ### Scenario A: The False Alarm (Insufficient Balance / Wrong PIN)
 1. **Trigger**: Customer pays ₹350 at bakery. Remitter bank returns `Z9` (Low balance).
 2. **Current System**: Soundbox is silent. Customer screen says: *"Payment failed. If money was deducted, refund in 3-5 days."* Customer panics: *"Did my ₹350 get deducted?!"*
-3. **ClearMoment System**:
+3. **SafeClear System**:
    - Customer screen flashes: *"Paisa bilkul nahi kata. Account balance kam tha."*
    - Suggests: *"Pay ₹350 instantly with UPI Lite."*
    - Customer completes payment in 2 seconds via UPI Lite.
@@ -200,8 +200,8 @@ We standardize exclusively on **Sarvam AI** for an end-to-end sovereign Indian A
 ### Scenario B: The Bank Server Timeout (`U68`) & QR Scan
 1. **Trigger**: SBI core banking slows down during festival rush. Payment enters `PENDING`.
 2. **Current System**: Counter deadlock. Merchant refuses to hand over sweets; customer shows debit SMS.
-3. **ClearMoment System**:
-   - Customer screen auto-flips to a big **ClearMoment Status QR**.
+3. **SafeClear System**:
+   - Customer screen auto-flips to a big **SafeClear Status QR**.
    - Merchant scans QR with Paytm for Business app.
    - Screen shows Amber: *"SBI latency high today (avg 24s). Hold goods."*
    - Soundbox announces: *"Verification jari hai. Kripya ruko."*
@@ -210,7 +210,7 @@ We standardize exclusively on **Sarvam AI** for an end-to-end sovereign Indian A
 
 ### Scenario C: The Duplicate Interception & 1-Tap Refund
 1. **Trigger**: Customer panics during pending and scans PhonePe QR code to pay again.
-2. **ClearMoment System**:
+2. **SafeClear System**:
    - Both transactions settle successfully (Merchant receives ₹500 + ₹500).
    - Merchant app immediately pops up high-priority banner:
      > *"⚠️ Suspected Duplicate Payment: Same customer paid ₹500 twice within 45 seconds."*

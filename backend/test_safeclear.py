@@ -1,5 +1,5 @@
 """
-In-Memory Integration Tests for Paytm ClearMoment Backend APIs
+In-Memory Integration Tests for Paytm SafeClear Backend APIs
 Uses FastAPI TestClient (no network socket required)
 """
 import sys
@@ -17,7 +17,7 @@ def test_health():
     res = client.get("/health")
     assert res.status_code == 200
     data = res.json()
-    assert data["service"] == "Paytm ClearMoment"
+    assert data["service"] == "Paytm SafeClear"
     assert "Sarvam AI" in data["ai_stack"]
     print("✅ Health check passed")
 
@@ -117,4 +117,4 @@ if __name__ == "__main__":
     test_upi_lite_pay()
     test_instant_refund()
     test_dispute_triage()
-    print("\n🎉 ALL CLEARMOMENT IN-MEMORY TESTS PASSED!")
+    print("\n🎉 ALL SAFECLEAR IN-MEMORY TESTS PASSED!")

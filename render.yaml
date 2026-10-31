@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: paytm-clearmoment
+    name: paytm-safeclear
     env: docker
     plan: free
     region: oregon

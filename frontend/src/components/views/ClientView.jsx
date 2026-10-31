@@ -441,7 +441,7 @@ export const ClientView = ({
 
       {/* Footer */}
       <footer className="p-3 text-center text-[10px] text-slate-400 font-mono-ui border-t border-slate-200 bg-white">
-        Paytm ClearMoment · Track 2 AI Journey
+        Paytm SafeClear · Track 2 AI Journey
       </footer>
     </div>
   );

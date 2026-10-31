@@ -1,7 +1,7 @@
-# Paytm ClearMoment — Start Script (Windows PowerShell)
+# Paytm SafeClear — Start Script (Windows PowerShell)
 # Track 2: AI-Powered Financial Journeys
 
-Write-Host "🚀 Starting Paytm ClearMoment..." -ForegroundColor Cyan
+Write-Host "🚀 Starting Paytm SafeClear..." -ForegroundColor Cyan
 
 # Start Backend
 Write-Host "⚙️ Starting FastAPI Backend on http://localhost:8000" -ForegroundColor Yellow

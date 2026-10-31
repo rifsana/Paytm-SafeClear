@@ -1,5 +1,5 @@
 """
-Paytm ClearMoment - FastAPI Backend (Track 2: AI-Powered Financial Journeys)
+Paytm SafeClear - FastAPI Backend (Track 2: AI-Powered Financial Journeys)
 Humanizing the Ambiguous 60 Seconds of UPI Point-of-Sale Payments
 Shared Real-Time Session Engine for Mobile (Client) & Laptop (Merchant)
 """
@@ -23,7 +23,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 app = FastAPI(
-    title="Paytm ClearMoment API",
+    title="Paytm SafeClear API",
     description="Track 2: AI-Powered Financial Journeys — Ambiguous 60-second UPI POS Resolution Engine",
     version="2.1.0",
 )
@@ -36,7 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SECRET_KEY = "paytm_clearmoment_secret_key_2026"
+SECRET_KEY = "paytm_safeclear_secret_key_2026"
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
 
 # ─────────────────────────────────────────────
@@ -153,7 +153,7 @@ SCENARIO_CONFIGS = {
     },
 }
 
-class ClearMomentState:
+class SafeClearState:
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
         self.event_log: List[Dict] = []
@@ -184,7 +184,7 @@ class ClearMomentState:
             "sarvam_explainer": None,
             "soundbox_alert": None,
             "qr_payload": None,
-            "qr_scanned": False,
+            "qr_scanned": false if False else False,
             "p1_settled": False,
             "duplicate_detected": False,
             "refund_executed": False,
@@ -192,7 +192,7 @@ class ClearMomentState:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-state = ClearMomentState()
+state = SafeClearState()
 
 # ─────────────────────────────────────────────
 # WebSocket Manager
@@ -505,7 +505,7 @@ def triage_dispute(req: TriageRequest):
         act = "⚡ Sarvam Intent Guard: Duplicate deduction detect hua. 1-Tap auto-refund active hai."
     else:
         cat = "COUNTER_INQUIRY"
-        act = "🔍 ClearMoment: Live transaction 18 second ke andar reconcile ho jayegi."
+        act = "🔍 SafeClear: Live transaction 18 second ke andar reconcile ho jayegi."
     return {"category": cat, "action": act, "engine": "Sarvam AI (saaras-v4 / sarvam-105b)"}
 
 class IntentGuardRequest(BaseModel):
@@ -579,7 +579,7 @@ async def create_certificate(req: CertificateRequest):
         "issued_at": issued_at,
         "hmac_sha256": hmac_sha256,
         "payload": payload,
-        "issuer": "NPCI UDIR + Sarvam ClearMoment",
+        "issuer": "NPCI UDIR + Sarvam SafeClear",
         "verified": True
     }
 
@@ -599,7 +599,7 @@ async def copilot_chat_stream(req: CopilotChatRequest):
     elif "400" in q_low or "duplicate" in q_low or "twice" in q_low:
         answer = "Sneha R. ne ₹400 do baar scan kiya hai (within 25s). Sarvam Intent Guard ne 98% confidence se duplicate detect kiya hai. POS screen par 'Issue 1-Tap Instant Refund' dabayein."
     else:
-        answer = "ClearMoment Sarvam AI Copilot active hai. All transactions and counter ambiguous states are monitored under the sovereign Sarvam AI protocol."
+        answer = "SafeClear Sarvam AI Copilot active hai. All transactions and counter ambiguous states are monitored under the sovereign Sarvam AI protocol."
 
     async def event_generator():
         words = answer.split(" ")
@@ -614,7 +614,7 @@ async def copilot_chat_stream(req: CopilotChatRequest):
 def health():
     return {
         "status": "ok",
-        "service": "Paytm ClearMoment",
+        "service": "Paytm SafeClear",
         "version": "2.1.0",
         "track": "Track 2: AI-Powered Financial Journeys",
         "ai_stack": "Sarvam AI (sarvam-105b, bulbul-v4-flash, saaras-v4, sarvam-m)",

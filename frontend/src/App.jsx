@@ -125,7 +125,7 @@ function App() {
         ws = new WebSocket(WS_URL);
         ws.onopen = () => {
           setConnected(true);
-          pushEvent("WS_OPEN", `Connected to ClearMoment Engine (${WS_URL})`);
+          pushEvent("WS_OPEN", `Connected to SafeClear Engine (${WS_URL})`);
         };
         ws.onmessage = (event) => {
           try {
@@ -285,7 +285,7 @@ function App() {
       <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-2">
           <span className="font-bold text-[#00BAF2] tracking-wider uppercase font-mono-ui">
-            Paytm ClearMoment
+            Paytm SafeClear
           </span>
           <span className="text-slate-400">|</span>
           <span className="text-slate-300 hidden sm:inline">Track 2 Multi-Device Sync</span>
