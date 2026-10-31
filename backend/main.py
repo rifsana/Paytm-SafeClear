@@ -34,10 +34,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Copilot-Source", "X-Copilot-Model"],
 )
 
 SECRET_KEY = "paytm_safeclear_secret_key_2026"
-SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
+SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "").strip()
+SARVAM_CHAT_URL = os.getenv("SARVAM_CHAT_URL", "https://api.sarvam.ai/v1/chat/completions")
+SARVAM_CHAT_MODEL = os.getenv("SARVAM_CHAT_MODEL", "sarvam-105b")
 
 # ─────────────────────────────────────────────
 # Sarvam AI Knowledge Base & Error Explainer
@@ -291,7 +294,7 @@ async def start_payment():
         }
         await broadcast({
             "type": "PRE_DEBIT_DECLINE",
-            "message": "❌ Bank returned Z9 (Insufficient Balance) — 'Zero Paisa Kata' badge surfaced"
+            "message": "Bank returned Z9 (Insufficient Balance) — 'Zero Paisa Kata' badge surfaced"
         })
 
     elif sc == "SCENARIO_B":
@@ -316,7 +319,7 @@ async def start_payment():
         }
         await broadcast({
             "type": "TIMEOUT_PENDING",
-            "message": f"⚠️ Bank Timeout U68 — Dynamic Status QR with Token #{state.session['token']} surfaced"
+            "message": f"Bank Timeout U68 — Dynamic Status QR with Token #{state.session['token']} surfaced"
         })
 
     elif sc == "SCENARIO_C":
@@ -347,7 +350,7 @@ async def execute_upi_lite_payment():
     })
     await broadcast({
         "type": "UPI_LITE_SETTLED",
-        "message": f"⚡ 1-Tap UPI Lite Checkout: ₹{state.session['amount']} settled in 1.8s (Zero core-banking latency)"
+        "message": f"1-Tap UPI Lite Checkout: ₹{state.session['amount']} settled in 1.8s (Zero core-banking latency)"
     })
 
 async def execute_scan_status_qr():
@@ -355,7 +358,7 @@ async def execute_scan_status_qr():
     state.session["qr_scanned"] = True
     await broadcast({
         "type": "QR_SCANNED_VERIFIED",
-        "message": f"📷 Merchant POS Scanned Customer QR: Valid Cryptographic Token #{state.session['token']} Verified"
+        "message": f"Merchant POS Scanned Customer QR: Valid Cryptographic Token #{state.session['token']} Verified"
     })
     # Switch reconciliation
     await asyncio.sleep(1.2)
@@ -376,7 +379,7 @@ async def execute_scan_status_qr():
     })
     await broadcast({
         "type": "SWITCH_SETTLED",
-        "message": f"✅ Switch ACK confirmed credit (RRN: {rrn}) — Goods Released!"
+        "message": f"Switch ACK confirmed credit (RRN: {rrn}) — Goods Released!"
     })
 
 async def execute_panic_rescan():
@@ -389,7 +392,7 @@ async def execute_panic_rescan():
     }
     await broadcast({
         "type": "DUPLICATE_DETECTED",
-        "message": f"🛡️ Sarvam Intent Guard: 98% Confidence Duplicate Intent — Paid twice within 25s!"
+        "message": f"Intent Guard: 98% confidence duplicate — paid twice within 25s"
     })
 
 async def execute_instant_refund():
@@ -412,7 +415,7 @@ async def execute_instant_refund():
     })
     await broadcast({
         "type": "REFUND_EXECUTED",
-        "message": f"💰 1-Tap Instant Refund Executed: ₹{state.session['amount']} returned to {state.session['customer']} (Ref: {refund_ref})"
+        "message": f"1-Tap Instant Refund Executed: ₹{state.session['amount']} returned to {state.session['customer']} (Ref: {refund_ref})"
     })
 
 # ─────────────────────────────────────────────
@@ -496,17 +499,17 @@ def triage_dispute(req: TriageRequest):
     t_low = req.text.lower()
     if any(k in t_low for k in ["cut", "kat", "debit", "paisa", "kata"]):
         cat = "PAID_NOT_RECEIVED"
-        act = "💡 Sarvam AI: Paisa verify ho raha hai. SafeClear switch se direct reconcile kar raha hai."
+        act = "SafeClear: Paisa verify ho raha hai. SafeClear switch se direct reconcile kar raha hai."
     elif any(k in t_low for k in ["fail", "decline", "reject", "pin", "balance"]):
         cat = "PRE_DEBIT_DECLINE"
-        act = "❌ Sarvam AI: Zero paisa kata. Account balance kam tha. UPI Lite se pay karein."
+        act = "SafeClear: Zero paisa kata. Account balance kam tha. UPI Lite se pay karein."
     elif any(k in t_low for k in ["double", "do baar", "duplicate"]):
         cat = "DUPLICATE_DEBIT"
-        act = "⚡ Sarvam Intent Guard: Duplicate deduction detect hua. 1-Tap auto-refund active hai."
+        act = "Intent Guard: Duplicate deduction detect hua. 1-Tap auto-refund active hai."
     else:
         cat = "COUNTER_INQUIRY"
-        act = "🔍 SafeClear: Live transaction 18 second ke andar reconcile ho jayegi."
-    return {"category": cat, "action": act, "engine": "Sarvam AI (saaras-v4 / sarvam-105b)"}
+        act = "SafeClear: Live transaction 18 second ke andar reconcile ho jayegi."
+    return {"category": cat, "action": act, "engine": "rules"}
 
 class IntentGuardRequest(BaseModel):
     customer_vpa: str
@@ -516,14 +519,14 @@ class IntentGuardRequest(BaseModel):
 
 @app.post("/api/sarvam/intent-guard")
 def sarvam_intent_guard(req: IntentGuardRequest):
-    """Sarvam-m Intent Guard Classifier."""
+    """Duplicate-intent check: same payer and amount within 120s."""
     is_dupe = req.time_delta_seconds < 120.0
     confidence = 0.98 if req.time_delta_seconds < 45.0 else (0.85 if is_dupe else 0.12)
     return {
         "is_duplicate_intent": is_dupe,
         "confidence": confidence,
         "risk_tier": "HIGH" if is_dupe else "LOW",
-        "model": "sarvam-m",
+        "model": "rules",
         "action": "SURFACE_1TAP_REFUND" if is_dupe else "PROCESS_AS_NEW",
         "verdict": f"Detected repeat payment of ₹{req.amount} within {int(req.time_delta_seconds)}s — {'Panic Duplicate' if is_dupe else 'Legitimate Repeat Purchase'}",
     }
@@ -588,27 +591,187 @@ class CopilotChatRequest(BaseModel):
     session_id: Optional[str] = "default"
     context: Optional[Dict[str, Any]] = None
 
+COPILOT_SYSTEM_PROMPT = """You are SafeClear Copilot, an assistant for a Paytm merchant at a UPI point-of-sale counter in India.
+You help the merchant resolve the ambiguous seconds after a customer pays: declines, bank timeouts and duplicate payments.
+Reply in the language the merchant uses (Hinglish, Hindi or English). Keep answers to 2-4 short sentences.
+Be concrete about whether money moved and what the merchant should do now (release goods, wait, scan the status QR, issue a refund).
+Never claim a payment succeeded unless the live session status is SETTLED.
+
+UPI error codes: ZM = wrong PIN (no debit), Z9 = insufficient balance (no debit), U16 = daily limit exceeded (no debit),
+U68 = bank timeout (debit ambiguous, wait for reconciliation or verify the customer's status QR)."""
+
+
+def canned_copilot_answer(message: str) -> str:
+    q_low = message.lower()
+    if "350" in q_low or "lite" in q_low or "balance" in q_low:
+        return "Customer ke account me insufficient balance tha. Paisa bilkul nahi kata (Zero Paisa Kata). Customer ko mobile screen par '1-Tap Pay via UPI Lite' dikh raha hai jisse 2 second me payment ho jayegi."
+    if "4821" in q_low or "token" in q_low or "250" in q_low:
+        return "Token #4821 Rahul S. ka ₹250 payment hai jo bank timeout me pending hai. Soundbox ne warning de di hai 'Saman na dein'. Customer ke phone ka Status QR scan karein ya 18 second ruko."
+    if "400" in q_low or "duplicate" in q_low or "twice" in q_low:
+        return "Sneha R. ne ₹400 do baar scan kiya hai (within 25s). Sarvam Intent Guard ne 98% confidence se duplicate detect kiya hai. POS screen par 'Issue 1-Tap Instant Refund' dabayein."
+    return "SafeClear Sarvam AI Copilot active hai. All transactions and counter ambiguous states are monitored under the sovereign Sarvam AI protocol."
+
+
+async def stream_words(text: str):
+    words = text.split(" ")
+    for i, word in enumerate(words):
+        yield (word + (" " if i < len(words) - 1 else "")).encode("utf-8")
+        await asyncio.sleep(0.015)
+
+
+def sarvam_headers() -> Dict[str, str]:
+    return {"api-subscription-key": SARVAM_API_KEY, "Content-Type": "application/json"}
+
+
+def live_session_context() -> str:
+    s = state.session
+    return (
+        f"Live counter session: scenario {s.get('scenario')}, status {s.get('status')}, "
+        f"amount Rs {s.get('amount')}, customer {s.get('customer')}, token #{s.get('token')}, "
+        f"bank {s.get('bank')}, error code {s.get('error_code') or 'none'}, store {s.get('store')}."
+    )
+
+
+def strip_think(text: str, in_think: bool):
+    """Drop inline <think>…</think> spans (defensive; Sarvam returns reasoning in a separate field)."""
+    out = ""
+    while text:
+        if in_think:
+            end = text.find("</think>")
+            if end < 0:
+                return out, True
+            text, in_think = text[end + 8:], False
+        else:
+            start = text.find("<think>")
+            if start < 0:
+                return out + text, False
+            out, text, in_think = out + text[:start], text[start + 7:], True
+    return out, in_think
+
+
+async def open_sarvam_chat_stream(message: str):
+    """Open a streaming Sarvam chat completion. Returns (client, response) on HTTP 200, else raises."""
+    payload = {
+        "model": SARVAM_CHAT_MODEL,
+        "messages": [
+            {"role": "system", "content": f"{COPILOT_SYSTEM_PROMPT}\n\n{live_session_context()}"},
+            {"role": "user", "content": message},
+        ],
+        "stream": True,
+        "temperature": 0.3,
+        "max_tokens": 1024,  # includes reasoning tokens
+        "reasoning_effort": "low",
+    }
+    client = httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0))
+    try:
+        req = client.build_request("POST", SARVAM_CHAT_URL, json=payload, headers=sarvam_headers())
+        resp = await client.send(req, stream=True)
+        if resp.status_code != 200:
+            body = (await resp.aread()).decode("utf-8", "replace")[:300]
+            await resp.aclose()
+            raise RuntimeError(f"Sarvam HTTP {resp.status_code}: {body}")
+        return client, resp
+    except Exception:
+        await client.aclose()
+        raise
+
+
+async def iter_sarvam_text(client: httpx.AsyncClient, resp: httpx.Response):
+    """Yield answer text from OpenAI-style SSE chunks; reasoning_content is skipped."""
+    in_think = False
+    try:
+        async for line in resp.aiter_lines():
+            if not line.startswith("data:"):
+                continue
+            data = line[5:].strip()
+            if data == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+            out, in_think = strip_think((choices[0].get("delta") or {}).get("content") or "", in_think)
+            if out:
+                yield out.encode("utf-8")
+    finally:
+        await resp.aclose()
+        await client.aclose()
+
+
 @app.post("/copilot/chat")
 @app.post("/api/copilot/chat")
 async def copilot_chat_stream(req: CopilotChatRequest):
-    q_low = req.message.lower()
-    if "350" in q_low or "lite" in q_low or "balance" in q_low:
-        answer = "Customer ke account me insufficient balance tha. Paisa bilkul nahi kata (Zero Paisa Kata). Customer ko mobile screen par '1-Tap Pay via UPI Lite' dikh raha hai jisse 2 second me payment ho jayegi."
-    elif "4821" in q_low or "token" in q_low or "250" in q_low:
-        answer = "Token #4821 Rahul S. ka ₹250 payment hai jo bank timeout me pending hai. Soundbox ne warning de di hai 'Saman na dein'. Customer ke phone ka Status QR scan karein ya 18 second ruko."
-    elif "400" in q_low or "duplicate" in q_low or "twice" in q_low:
-        answer = "Sneha R. ne ₹400 do baar scan kiya hai (within 25s). Sarvam Intent Guard ne 98% confidence se duplicate detect kiya hai. POS screen par 'Issue 1-Tap Instant Refund' dabayein."
-    else:
-        answer = "SafeClear Sarvam AI Copilot active hai. All transactions and counter ambiguous states are monitored under the sovereign Sarvam AI protocol."
+    fallback_headers = {"X-Copilot-Source": "fallback"}
+    if not SARVAM_API_KEY:
+        return StreamingResponse(stream_words(canned_copilot_answer(req.message)), media_type="text/plain", headers=fallback_headers)
+
+    try:
+        client, resp = await open_sarvam_chat_stream(req.message)
+    except Exception as e:
+        print(f"[copilot] Sarvam call failed: {e}", flush=True)
+        return StreamingResponse(stream_words(canned_copilot_answer(req.message)), media_type="text/plain", headers=fallback_headers)
+
+    # Wait for the first answer text so the source header is truthful.
+    chunks = iter_sarvam_text(client, resp)
+    try:
+        first = await chunks.__anext__()
+    except StopAsyncIteration:
+        print("[copilot] Sarvam returned no answer text; using fallback", flush=True)
+        return StreamingResponse(stream_words(canned_copilot_answer(req.message)), media_type="text/plain", headers=fallback_headers)
+    except Exception as e:
+        await chunks.aclose()
+        print(f"[copilot] Sarvam stream failed: {e}", flush=True)
+        return StreamingResponse(stream_words(canned_copilot_answer(req.message)), media_type="text/plain", headers=fallback_headers)
 
     async def event_generator():
-        words = answer.split(" ")
-        for i, word in enumerate(words):
-            chunk = word + (" " if i < len(words) - 1 else "")
-            yield chunk.encode("utf-8")
-            await asyncio.sleep(0.015)
+        yield first
+        try:
+            async for piece in chunks:
+                yield piece
+        except Exception as e:
+            print(f"[copilot] Sarvam stream broke: {e}", flush=True)
 
-    return StreamingResponse(event_generator(), media_type="text/plain")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/plain",
+        headers={"X-Copilot-Source": "sarvam", "X-Copilot-Model": SARVAM_CHAT_MODEL},
+    )
+
+
+@app.get("/api/copilot/ping")
+async def copilot_ping():
+    """Live check of the Sarvam chat integration. Never returns the key."""
+    if not SARVAM_API_KEY:
+        return {"ok": False, "reason": "SARVAM_API_KEY not set", "model": SARVAM_CHAT_MODEL}
+    payload = {
+        "model": SARVAM_CHAT_MODEL,
+        "messages": [{"role": "user", "content": "Reply with just: OK"}],
+        "max_tokens": 256,
+        "reasoning_effort": "low",
+    }
+    started = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0)) as client:
+            r = await client.post(SARVAM_CHAT_URL, json=payload, headers=sarvam_headers())
+        latency_ms = int((time.time() - started) * 1000)
+        if r.status_code != 200:
+            try:
+                err = r.json().get("error", {})
+            except Exception:
+                err = {}
+            return {"ok": False, "http_status": r.status_code, "error_code": err.get("code"),
+                    "error_message": (err.get("message") or r.text)[:200], "latency_ms": latency_ms, "model": SARVAM_CHAT_MODEL}
+        data = r.json()
+        choice = (data.get("choices") or [{}])[0]
+        reply, _ = strip_think((choice.get("message") or {}).get("content") or "", False)
+        return {"ok": bool(reply.strip()), "http_status": 200, "model": data.get("model", SARVAM_CHAT_MODEL),
+                "finish_reason": choice.get("finish_reason"), "reply": reply.strip()[:80],
+                "usage": data.get("usage"), "latency_ms": latency_ms}
+    except Exception as e:
+        return {"ok": False, "reason": f"{type(e).__name__}: {e}"[:200], "model": SARVAM_CHAT_MODEL}
 
 @app.get("/health")
 def health():
@@ -617,8 +780,9 @@ def health():
         "service": "Paytm SafeClear",
         "version": "2.1.0",
         "track": "Track 2: AI-Powered Financial Journeys",
-        "ai_stack": "Sarvam AI (sarvam-105b, bulbul-v4-flash, saaras-v4, sarvam-m)",
-        "session_status": state.session["status"]
+        "ai_stack": f"Sarvam AI chat ({SARVAM_CHAT_MODEL}) for copilot; rule-based explainer, triage and intent guard",
+        "session_status": state.session["status"],
+        "copilot": {"sarvam_key_configured": bool(SARVAM_API_KEY), "model": SARVAM_CHAT_MODEL},
     }
 
 # Mount built React frontend for unified single-service hosting

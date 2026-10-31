@@ -6,7 +6,7 @@ import { ClientView } from "@/components/views/ClientView";
 import { MerchantView } from "@/components/views/MerchantView";
 import { PaytmLogo, LiveDot } from "@/components/ui/Brand";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
-import { uid } from "@/lib/simulator";
+import { uid } from "@/lib/uid";
 
 const nowHMS = () => new Date().toLocaleTimeString("en-GB", { hour12: false });
 

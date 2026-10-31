@@ -78,7 +78,7 @@ export const Soundbox = ({ amount, playing, onPlay, status, token = "4821", cust
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[15px] font-semibold">Soundbox</div>
-          <div className="text-xs text-white/60">Voice alerts · Sarvam bulbul</div>
+          <div className="text-xs text-white/60">Voice alerts · 4 languages</div>
         </div>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
           <Volume2 className={`h-4 w-4 ${playing ? "text-paytm-sky" : "text-white/70"}`} />

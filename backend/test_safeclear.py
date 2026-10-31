@@ -19,7 +19,7 @@ def test_health():
     data = res.json()
     assert data["service"] == "Paytm SafeClear"
     assert "Sarvam AI" in data["ai_stack"]
-    print("✅ Health check passed")
+    print("Health check passed")
 
 def test_sarvam_explain():
     # Test Z9 (Insufficient Balance)
@@ -45,7 +45,7 @@ def test_sarvam_explain():
     data = res.json()
     assert data["money_moved"] is None  # Ambiguous
     assert data["badge"] == "PAISA KATA HAI — VERIFYING"
-    print("✅ Sarvam Explainer passed (Z9, ZM, U68)")
+    print("Error explainer passed (Z9, ZM, U68)")
 
 def test_intent_guard():
     # Duplicate within 30s
@@ -71,7 +71,7 @@ def test_intent_guard():
     assert res.status_code == 200
     data = res.json()
     assert data["is_duplicate_intent"] is False
-    print("✅ Sarvam Intent Guard passed")
+    print("Intent guard passed")
 
 def test_status_qr():
     res = client.post("/api/verify-status-qr", json={
@@ -85,7 +85,7 @@ def test_status_qr():
     data = res.json()
     assert data["verified"] is True
     assert data["token"] == "4821"
-    print("✅ Dynamic Status QR Verification passed")
+    print("Dynamic Status QR Verification passed")
 
 def test_upi_lite_pay():
     res = client.post("/api/upi-lite/pay", json={"amount": 350.0})
@@ -93,21 +93,21 @@ def test_upi_lite_pay():
     data = res.json()
     assert data["status"] == "success"
     assert data["mode"] == "UPI_LITE"
-    print("✅ UPI Lite Recovery Pay passed")
+    print("UPI Lite Recovery Pay passed")
 
 def test_instant_refund():
     res = client.post("/api/instant-refund", json={"amount": 400.0})
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "refund_initiated"
-    print("✅ Instant 1-Tap Refund passed")
+    print("Instant 1-Tap Refund passed")
 
 def test_dispute_triage():
     res = client.post("/api/triage", json={"text": "Paisa kat gaya par dukandar bola nahi aaya"})
     assert res.status_code == 200
     data = res.json()
-    assert "Sarvam AI" in data["engine"]
-    print("✅ Saaras-v4 Dispute Triage passed")
+    assert data["engine"] == "rules"
+    print("Dispute triage passed")
 
 if __name__ == "__main__":
     test_health()
@@ -117,4 +117,4 @@ if __name__ == "__main__":
     test_upi_lite_pay()
     test_instant_refund()
     test_dispute_triage()
-    print("\n🎉 ALL SAFECLEAR IN-MEMORY TESTS PASSED!")
+    print("\nAll SafeClear in-memory tests passed")

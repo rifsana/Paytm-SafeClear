@@ -341,7 +341,7 @@ export const ClientView = ({
           </section>
         )}
 
-        {/* Saaras-v4 vernacular dispute intake */}
+        {/* Vernacular dispute intake */}
         <section className="card p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
             <MessageCircleQuestion className="h-4 w-4 text-paytm-sky" />

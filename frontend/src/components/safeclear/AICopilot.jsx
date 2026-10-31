@@ -12,28 +12,28 @@ const CODE_SANDBOX = [
   {
     code: "ZM",
     name: "Incorrect PIN",
-    debit: "❌ NEVER",
+    debit: "NEVER",
     legacy: "If deducted, refund in 3-5 days",
     sarvam: "PIN galat tha. Paisa bilkul nahi kata. Turant dobara koshish karein.",
   },
   {
     code: "Z9",
     name: "Low Balance",
-    debit: "❌ NEVER",
+    debit: "NEVER",
     legacy: "If deducted, refund in 3-5 days",
     sarvam: "Account mein balance kam tha. Paisa nahi kata. UPI Lite ya doosra bank chunein.",
   },
   {
     code: "U16",
     name: "Daily Limit",
-    debit: "❌ NEVER",
+    debit: "NEVER",
     legacy: "If deducted, refund in 3-5 days",
     sarvam: "Rozana limit puri ho gayi hai. Kisi aur account ya card se pay karein.",
   },
   {
     code: "U68",
     name: "Bank Timeout",
-    debit: "⏳ AMBIGUOUS",
+    debit: "AMBIGUOUS",
     legacy: "If deducted, refund in 3-5 days",
     sarvam: "Bank se confirmation baki hai. Dobara scan MAT karein. 30 second ruko.",
   },
@@ -65,7 +65,8 @@ export const AICopilot = ({ apiBase, context }) => {
           context,
         }),
       });
-      if (!r.body) throw new Error("No stream body");
+      if (!r.ok || !r.body) throw new Error(`Copilot unavailable (HTTP ${r.status})`);
+      const source = r.headers.get("X-Copilot-Source") === "sarvam" ? r.headers.get("X-Copilot-Model") || "sarvam" : "offline";
       const reader = r.body.getReader();
       const decoder = new TextDecoder();
       let acc = "";
@@ -75,14 +76,14 @@ export const AICopilot = ({ apiBase, context }) => {
         acc += decoder.decode(value, { stream: true });
         setMessages((m) => {
           const copy = [...m];
-          copy[copy.length - 1] = { role: "ai", text: acc };
+          copy[copy.length - 1] = { role: "ai", text: acc, source };
           return copy;
         });
       }
     } catch (e) {
       setMessages((m) => {
         const copy = [...m];
-        copy[copy.length - 1] = { role: "ai", text: `[Error: ${e.message}]` };
+        copy[copy.length - 1] = { role: "ai", text: e.message, source: "error" };
         return copy;
       });
     } finally {
@@ -162,6 +163,11 @@ export const AICopilot = ({ apiBase, context }) => {
               }`}
             >
               {m.text || <span className="inline-flex gap-1 py-1"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:120ms]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:240ms]" /></span>}
+              {m.role === "ai" && m.source && m.text && (
+                <div className="mt-1 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                  {m.source === "offline" ? "Offline reply" : m.source === "error" ? "Error" : `Sarvam · ${m.source}`}
+                </div>
+              )}
             </div>
           </div>
         ))}
