@@ -1,13 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import "@/App.css";
 import { Toaster, toast } from "sonner";
-import { Smartphone, Monitor, Columns, RefreshCw } from "lucide-react";
+import { Smartphone, Store, Columns2 } from "lucide-react";
 
 import { ClientView } from "@/components/views/ClientView";
 import { MerchantView } from "@/components/views/MerchantView";
+import { PaytmLogo, LiveDot } from "@/components/ui/Brand";
 import { uid } from "@/lib/simulator";
 
 const nowHMS = () => new Date().toLocaleTimeString("en-GB", { hour12: false });
+
+const useMediaQuery = (query) => {
+  const get = () => typeof window !== "undefined" && window.matchMedia(query).matches;
+  const [matches, setMatches] = useState(get);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setMatches(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, [query]);
+  return matches;
+};
+
+const MODES = [
+  { id: "merchant", label: "Merchant", icon: Store },
+  { id: "client", label: "Customer", icon: Smartphone },
+  { id: "split", label: "Split", icon: Columns2, wideOnly: true },
+];
 
 function App() {
   // Determine view mode: client, merchant, or split
@@ -277,139 +296,89 @@ function App() {
     pushEvent("CHAOS_RESET", "Banks reset to normal");
   };
 
+  const isWide = useMediaQuery("(min-width: 1024px)");
+  // Split needs room for the phone frame; narrower screens fall back to the merchant view.
+  const effectiveMode = viewMode === "split" && !isWide ? "merchant" : viewMode;
+
+  const clientProps = {
+    session,
+    onPay: handlePay,
+    onUpiLitePay: handleUpiLitePay,
+    onPanicRescan: handlePanicRescan,
+    onReset: handleReset,
+    onSelectScenario: handleSelectScenario,
+    connected,
+  };
+
+  const merchantProps = {
+    session,
+    events,
+    ledger,
+    certificate,
+    bankHealth,
+    soundboxPlaying,
+    onPlaySoundbox: () =>
+      triggerSoundbox(session?.soundbox_alert?.audio_file, session?.soundbox_alert?.text),
+    onScanQR: handleScanQR,
+    onInstantRefund: handleInstantRefund,
+    onDecision: handleDecision,
+    onReset: handleReset,
+    onSelectScenario: handleSelectScenario,
+    onCrashHDFC: crashHDFC,
+    onSpikeSBI: spikeSBI,
+    onResetBanks: resetBanks,
+    connected,
+    apiBase: API,
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      <Toaster position="top-right" richColors />
+    <div className="min-h-dvh bg-paytm-bg text-slate-900">
+      <Toaster position="top-center" richColors closeButton />
 
-      {/* Floating Top Mode Switcher Bar */}
-      <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-[#00BAF2] tracking-wider uppercase font-mono-ui">
-            Paytm SafeClear
-          </span>
-          <span className="text-slate-400">|</span>
-          <span className="text-slate-300 hidden sm:inline">Track 2 Multi-Device Sync</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-slate-700">
-          <button
-            onClick={() => setViewMode("merchant")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all press-shrink ${
-              viewMode === "merchant"
-                ? "bg-[#002970] text-white shadow"
-                : "text-slate-300 hover:text-white"
-            }`}
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span>Laptop (Merchant)</span>
-          </button>
-
-          <button
-            onClick={() => setViewMode("client")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all press-shrink ${
-              viewMode === "client"
-                ? "bg-emerald-600 text-white shadow"
-                : "text-slate-300 hover:text-white"
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Mobile (Customer)</span>
-          </button>
-
-          <button
-            onClick={() => setViewMode("split")}
-            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all press-shrink ${
-              viewMode === "split"
-                ? "bg-violet-600 text-white shadow"
-                : "text-slate-300 hover:text-white"
-            }`}
-          >
-            <Columns className="w-3.5 h-3.5" />
-            <span>Split Demo</span>
-          </button>
-        </div>
-      </div>
-
-      {/* RENDER VIEW ACCORDING TO USER MODE */}
-      {viewMode === "client" && (
-        <ClientView
-          session={session}
-          onPay={handlePay}
-          onUpiLitePay={handleUpiLitePay}
-          onPanicRescan={handlePanicRescan}
-          onReset={handleReset}
-          onSelectScenario={handleSelectScenario}
-          connected={connected}
-        />
-      )}
-
-      {viewMode === "merchant" && (
-        <MerchantView
-          session={session}
-          events={events}
-          ledger={ledger}
-          certificate={certificate}
-          bankHealth={bankHealth}
-          soundboxPlaying={soundboxPlaying}
-          onPlaySoundbox={() =>
-            triggerSoundbox(
-              session?.soundbox_alert?.audio_file,
-              session?.soundbox_alert?.text
-            )
-          }
-          onScanQR={handleScanQR}
-          onInstantRefund={handleInstantRefund}
-          onDecision={handleDecision}
-          onReset={handleReset}
-          onSelectScenario={handleSelectScenario}
-          onCrashHDFC={crashHDFC}
-          onSpikeSBI={spikeSBI}
-          onResetBanks={resetBanks}
-          connected={connected}
-          apiBase={API}
-        />
-      )}
-
-      {viewMode === "split" && (
-        <div className="grid grid-cols-1 md:grid-cols-12 min-h-screen">
-          <div className="md:col-span-5 bg-slate-200 p-4 flex items-center justify-center border-r border-slate-300">
-            <div className="w-full max-w-sm rounded-[36px] overflow-hidden shadow-2xl border-4 border-slate-900 bg-white">
-              <ClientView
-                session={session}
-                onPay={handlePay}
-                onUpiLitePay={handleUpiLitePay}
-                onPanicRescan={handlePanicRescan}
-                onReset={handleReset}
-                onSelectScenario={handleSelectScenario}
-                connected={connected}
-              />
-            </div>
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+        <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <PaytmLogo className="text-[22px]" />
+            <span className="h-5 w-px bg-slate-200" />
+            <span className="truncate text-sm font-semibold text-paytm-navy">SafeClear</span>
+            <span className="hidden sm:inline-flex">
+              <LiveDot connected={connected} />
+            </span>
           </div>
-          <div className="md:col-span-7">
-            <MerchantView
-              session={session}
-              events={events}
-              ledger={ledger}
-              certificate={certificate}
-              bankHealth={bankHealth}
-              soundboxPlaying={soundboxPlaying}
-              onPlaySoundbox={() =>
-                triggerSoundbox(
-                  session?.soundbox_alert?.audio_file,
-                  session?.soundbox_alert?.text
-                )
-              }
-              onScanQR={handleScanQR}
-              onInstantRefund={handleInstantRefund}
-              onDecision={handleDecision}
-              onReset={handleReset}
-              onSelectScenario={handleSelectScenario}
-              onCrashHDFC={crashHDFC}
-              onSpikeSBI={spikeSBI}
-              onResetBanks={resetBanks}
-              connected={connected}
-              apiBase={API}
-            />
+
+          <nav className="segmented shrink-0" aria-label="View mode">
+            {MODES.filter((m) => !m.wideOnly || isWide).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={effectiveMode === id}
+                onClick={() => setViewMode(id)}
+                className="flex items-center gap-1.5"
+              >
+                <Icon className="h-4 w-4" />
+                <span className="hidden min-[400px]:inline">{label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      {effectiveMode === "client" && <ClientView {...clientProps} />}
+
+      {effectiveMode === "merchant" && <MerchantView {...merchantProps} />}
+
+      {effectiveMode === "split" && (
+        <div className="mx-auto grid max-w-[1440px] grid-cols-[400px_minmax(0,1fr)] gap-6 px-6 py-6">
+          <aside className="sticky top-20 self-start">
+            <div className="mx-auto w-[380px] rounded-[44px] bg-slate-900 p-3 shadow-lift">
+              <div className="relative h-[min(780px,calc(100dvh-140px))] overflow-hidden rounded-[34px] bg-paytm-bg">
+                <ClientView {...clientProps} embedded />
+              </div>
+            </div>
+            <p className="mt-3 text-center text-xs text-slate-500">Customer phone · live synced</p>
+          </aside>
+          <div className="min-w-0">
+            <MerchantView {...merchantProps} embedded />
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, Mic, ShieldAlert, CheckCircle2, ChevronRight, BookOpen } from "lucide-react";
+import { Sparkles, Send } from "lucide-react";
 
 const CHIPS = [
   "Payment atka hai kya?",
@@ -90,134 +90,109 @@ export const AICopilot = ({ apiBase, context }) => {
     }
   };
 
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  const submit = () => {
+    if (!input.trim()) return;
+    send(input.trim());
+    setInput("");
+  };
+
   return (
-    <div
-      data-testid="ai-copilot"
-      className="rounded-2xl bg-gradient-to-b from-violet-50/70 to-white border border-violet-200 p-4 shadow-sm"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#7C3AED] to-fuchsia-600 flex items-center justify-center shadow">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <div className="font-display font-bold text-[#7C3AED] text-sm leading-tight">
-              Sarvam AI Intelligence Core
-            </div>
-            <div className="text-[10px] text-slate-500 font-mono-ui">
-              sarvam-105b · sarvam-m intent guard
-            </div>
+    <section data-testid="ai-copilot" className="card flex flex-col">
+      <div className="card-header">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paytm-skySoft text-paytm-sky">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <div className="card-title">SafeClear Copilot</div>
+            <div className="card-subtitle truncate">Powered by Sarvam AI</div>
           </div>
         </div>
-        <span className="font-mono-ui text-[9px] uppercase tracking-wider text-violet-700 bg-violet-100 px-2 py-0.5 rounded-full font-bold">
-          Sovereign AI
-        </span>
       </div>
 
-      {/* Sarvam "Why It Failed" Code Sandbox (Interactive Blueprint Component) */}
-      <div className="mb-3 p-3 rounded-xl bg-white border border-violet-100 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#002970]">
-            <BookOpen className="w-3.5 h-3.5 text-[#7C3AED]" />
-            <span>Pillar 2: Error Code Transformer</span>
-          </div>
-          <span className="text-[9px] text-slate-400 font-mono-ui">Tap code to test</span>
-        </div>
-
+      {/* Error code transformer */}
+      <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
+        <div className="mb-2 text-xs font-medium text-slate-500">Decode a UPI error</div>
         <div className="grid grid-cols-4 gap-1.5">
           {CODE_SANDBOX.map((item) => (
             <button
               key={item.code}
-              onClick={() => setSelectedCode(item)}
-              className={`p-1.5 rounded-lg border text-center transition-all min-h-[44px] ${
+              type="button"
+              onClick={() => setSelectedCode(selectedCode?.code === item.code ? null : item)}
+              aria-pressed={selectedCode?.code === item.code}
+              className={`min-h-[48px] min-w-0 rounded-xl border px-1 py-1.5 text-center transition ${
                 selectedCode?.code === item.code
-                  ? "bg-[#7C3AED] text-white border-[#7C3AED] shadow"
-                  : "bg-slate-50 hover:bg-violet-50 border-slate-200 text-slate-700"
+                  ? "border-paytm-navy bg-paytm-navy text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
               }`}
             >
-              <div className="font-mono-ui font-black text-xs">{item.code}</div>
-              <div className="text-[8px] leading-tight opacity-90 truncate">{item.name}</div>
+              <div className="font-mono text-xs font-bold">{item.code}</div>
+              <div className="truncate text-[10px] opacity-80">{item.name}</div>
             </button>
           ))}
         </div>
 
         {selectedCode && (
-          <div className="mt-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] space-y-1.5">
-            <div className="flex items-center justify-between border-b border-slate-200/60 pb-1">
-              <span className="font-mono-ui font-bold text-[#002970]">{selectedCode.code}: {selectedCode.name}</span>
-              <span className="font-mono-ui font-bold text-xs text-rose-600">Money Moved? {selectedCode.debit}</span>
+          <div className="mt-2.5 animate-fade-in rounded-xl bg-slate-50 p-3 text-[13px]">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-slate-900">{selectedCode.name}</span>
+              <span className={`pill ${selectedCode.debit.includes("NEVER") ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                {selectedCode.debit.includes("NEVER") ? "No debit" : "Ambiguous"}
+              </span>
             </div>
-            <div className="text-[10px] text-rose-700">
-              <span className="font-bold line-through text-slate-400 mr-1">"{selectedCode.legacy}"</span>
-              <span className="font-semibold text-rose-600">(Blanket Lie)</span>
-            </div>
-            <div className="text-[11px] text-emerald-800 font-medium bg-emerald-50 p-1.5 rounded border border-emerald-200">
-              <span className="font-bold">Sarvam AI Direct Verdict:</span> "{selectedCode.sarvam}"
-            </div>
+            <div className="mt-1.5 text-xs text-slate-400 line-through">"{selectedCode.legacy}"</div>
+            <div className="mt-1 leading-snug text-slate-700">{selectedCode.sarvam}</div>
           </div>
         )}
       </div>
 
-      {/* Chat Messages */}
-      <div className="max-h-44 overflow-y-auto space-y-2 pr-1 text-xs mb-3">
+      {/* Chat */}
+      <div ref={scrollRef} className="thin-scroll max-h-64 min-h-[8rem] space-y-2 overflow-y-auto px-4 py-3 sm:px-5">
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`p-2.5 rounded-xl ${
-              m.role === "user"
-                ? "bg-[#002970] text-white ml-6 text-right"
-                : "bg-white border border-slate-200 text-slate-800 mr-4 shadow-sm"
-            }`}
-          >
-            <div className="text-[9px] font-mono-ui opacity-70 mb-0.5 uppercase">
-              {m.role === "user" ? "Merchant / Judge" : "Sarvam AI"}
+          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed ${
+                m.role === "user" ? "rounded-br-md bg-paytm-navy text-white" : "rounded-bl-md bg-slate-100 text-slate-800"
+              }`}
+            >
+              {m.text || <span className="inline-flex gap-1 py-1"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:120ms]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:240ms]" /></span>}
             </div>
-            <div className="leading-relaxed font-medium">{m.text}</div>
           </div>
         ))}
       </div>
 
-      {/* Suggested Chips */}
-      <div className="flex flex-wrap gap-1 mb-2.5">
+      <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-2 sm:px-5">
         {CHIPS.map((c) => (
           <button
             key={c}
+            type="button"
             onClick={() => send(c)}
-            className="text-[10px] px-2 py-1 rounded-full bg-white border border-violet-200 text-[#7C3AED] hover:bg-violet-100 font-medium press-shrink transition-colors"
+            disabled={streaming}
+            className="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-paytm-navy transition hover:border-paytm-sky hover:bg-paytm-skySoft/50 disabled:opacity-50"
           >
             {c}
           </button>
         ))}
       </div>
 
-      {/* Input */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 px-4 pb-4 pt-1 sm:px-5">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && input.trim()) {
-              send(input.trim());
-              setInput("");
-            }
-          }}
-          placeholder="Ask Sarvam Copilot in Hinglish or English..."
-          className="flex-1 text-xs px-3 py-2 rounded-xl border border-slate-200 focus:border-[#7C3AED] focus:ring-2 focus:ring-violet-100 outline-none bg-white min-h-[44px]"
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+          placeholder="Ask in Hinglish or English…"
+          className="input min-w-0 flex-1"
         />
-        <button
-          onClick={() => {
-            if (input.trim()) {
-              send(input.trim());
-              setInput("");
-            }
-          }}
-          disabled={streaming}
-          className="min-h-[44px] px-3.5 py-2 rounded-xl bg-[#7C3AED] text-white hover:bg-violet-700 text-xs font-semibold press-shrink flex items-center gap-1 shadow-sm"
-        >
-          <Send className="w-3.5 h-3.5" />
+        <button type="button" onClick={submit} disabled={streaming} className="btn-primary shrink-0 px-3.5" aria-label="Send">
+          <Send className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </section>
   );
 };

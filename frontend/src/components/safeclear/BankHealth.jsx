@@ -1,26 +1,24 @@
-import { Landmark } from "lucide-react";
-
 const STATUS_META = {
-  NORMAL:        { label: "NORMAL",   dot: "bg-emerald-500 text-emerald-500", ring: "ring-emerald-200", pill: "text-emerald-700" },
-  HEALTHY:       { label: "HEALTHY",  dot: "bg-emerald-500 text-emerald-500", ring: "ring-emerald-200", pill: "text-emerald-700" },
-  LATENCY_SPIKE: { label: "SPIKE",    dot: "bg-amber-500 text-amber-500",    ring: "ring-amber-300",   pill: "text-amber-700" },
-  DEGRADED:      { label: "DEGRADED", dot: "bg-amber-500 text-amber-500",    ring: "ring-amber-300",   pill: "text-amber-700" },
-  CRASHED:       { label: "CRASHED",  dot: "bg-rose-500 text-rose-500",      ring: "ring-rose-300",    pill: "text-rose-700" },
+  NORMAL:        { label: "Healthy",  dot: "bg-emerald-500", text: "text-emerald-700" },
+  HEALTHY:       { label: "Healthy",  dot: "bg-emerald-500", text: "text-emerald-700" },
+  LATENCY_SPIKE: { label: "Slow",     dot: "bg-amber-500",   text: "text-amber-700" },
+  DEGRADED:      { label: "Degraded", dot: "bg-amber-500",   text: "text-amber-700" },
+  CRASHED:       { label: "Down",     dot: "bg-rose-500",    text: "text-rose-700" },
 };
 
-export const BankHealth = ({ health = {} }) => {
+export const BankHealth = ({ health = {}, children }) => {
   const entries = Object.entries(health || {});
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4" data-testid="bank-health-grid">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Landmark className="w-4 h-4 text-[#002970]" />
-          <div className="font-display font-bold text-[#002970] text-sm">Payer Issuer Bank Health</div>
+    <section className="card @container" data-testid="bank-health-grid">
+      <div className="card-header">
+        <div>
+          <div className="card-title">Bank health</div>
+          <div className="card-subtitle">Payer issuer latency &amp; timeouts</div>
         </div>
-        <div className="text-[10px] text-slate-500 font-mono-ui">live · 1s</div>
+        <span className="pill bg-slate-100 text-slate-600">Live</span>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 p-4 @lg:grid-cols-4 sm:px-5">
         {entries.map(([bank, h = {}]) => {
           const rawStatus = (h.status || "NORMAL").toUpperCase();
           const m = STATUS_META[rawStatus] || STATUS_META.NORMAL;
@@ -28,32 +26,24 @@ export const BankHealth = ({ health = {} }) => {
           const timeoutNum = Number(h.timeoutPct ?? h.timeout_rate ?? 0.5);
 
           return (
-            <div
-              key={bank}
-              data-testid={`bank-health-${bank.toLowerCase()}`}
-              className={`rounded-xl border bg-slate-50/60 p-3 ring-1 ${m.ring}`}
-            >
+            <div key={bank} data-testid={`bank-health-${bank.toLowerCase()}`} className="rounded-xl border border-slate-200 p-3">
               <div className="flex items-center justify-between">
-                <span className="font-display font-bold text-[#002970] text-sm">{bank}</span>
-                <span className={`status-dot ${m.dot}`} />
+                <span className="text-sm font-semibold text-slate-900">{bank}</span>
+                <span className={`h-2 w-2 rounded-full ${m.dot}`} />
               </div>
-              <div className="flex items-center justify-between mt-2 text-[11px]">
-                <span className="text-slate-500">latency</span>
-                <span className="font-mono-ui text-[#002970] font-semibold">{latency}ms</span>
+              <div className="mt-2 text-lg font-semibold leading-none text-slate-900 tabular">
+                {latency}
+                <span className="ml-0.5 text-xs font-normal text-slate-500">ms</span>
               </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">timeout</span>
-                <span className="font-mono-ui text-[#002970] font-semibold">
-                  {isNaN(timeoutNum) ? "0.5" : timeoutNum.toFixed(1)}%
-                </span>
-              </div>
-              <div className={`mt-2 text-[10px] font-mono-ui uppercase tracking-wider font-bold ${m.pill}`}>
-                {m.label}
+              <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                <span className={`font-medium ${m.text}`}>{m.label}</span>
+                <span className="text-slate-500 tabular">{isNaN(timeoutNum) ? "0.5" : timeoutNum.toFixed(1)}% t/o</span>
               </div>
             </div>
           );
         })}
       </div>
-    </div>
+      {children && <div className="border-t border-slate-100 px-4 py-3 sm:px-5">{children}</div>}
+    </section>
   );
 };

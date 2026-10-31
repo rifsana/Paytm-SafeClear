@@ -1,29 +1,33 @@
-import { useState, useRef } from "react";
-import { Volume2, Play, ShieldAlert, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Volume2, Play, ShieldCheck } from "lucide-react";
 
 const PHRASES = {
   Hindi: {
-    pending: (amt, tok) => `ध्यान दें: राहुल से ${amt} रुपये का पेमेंट वेरीफाई हो रहा है। टोकन ${tok}। सामान न दें।`,
+    pending: (amt, tok, who) => `ध्यान दें: ${who} से ${amt} रुपये का पेमेंट वेरीफाई हो रहा है। टोकन ${tok}। सामान न दें।`,
     decline: (amt, tok) => `टोकन ${tok} असफल रहा। पैसा नहीं कटा। सामान न दें।`,
     duplicate: () => `चेतावनी: डुप्लीकेट पेमेंट डिटेक्ट हुआ।`,
+    refund: (amt) => `डुप्लीकेट पेमेंट के ${amt} रुपये वापस भेज दिए गए।`,
     success: (amt) => `पेटीएम पर ${amt} रुपये प्राप्त हुए।`,
   },
   English: {
-    pending: (amt, tok) => `Attention: Payment of ${amt} rupees from Rahul is verifying. Token ${tok}. Do not release goods.`,
+    pending: (amt, tok, who) => `Attention: Payment of ${amt} rupees from ${who} is verifying. Token ${tok}. Do not release goods.`,
     decline: (amt, tok) => `Token ${tok} declined. No money deducted. Do not release goods.`,
     duplicate: () => `Warning: Duplicate payment detected.`,
+    refund: (amt) => `Duplicate payment of ${amt} rupees refunded.`,
     success: (amt) => `Received ${amt} rupees on Paytm.`,
   },
   Tamil: {
     pending: (amt, tok) => `Kavanikka: ${amt} rubai verify seiyyapadugiradhu. Token ${tok}. Porutkalai kodukka vendaam.`,
     decline: (amt, tok) => `Token ${tok} tholvi. Panam edukkapadavillai. Porutkalai tharavendaam.`,
     duplicate: () => `Echarikkai: Duplicate payment kandeedappattadhu.`,
+    refund: (amt) => `${amt} rubai thirumbi anuppappattadhu.`,
     success: (amt) => `${amt} rubai Paytm il perappattathu.`,
   },
   Telugu: {
     pending: (amt, tok) => `Gamaninchandi: ${amt} rupayalu verify avthundi. Token ${tok}. Vastuvalu ivvakandi.`,
     decline: (amt, tok) => `Token ${tok} viphalamaindi. Dabbulu taggaledu. Vastuvalu ivvakandi.`,
     duplicate: () => `Hecharika: Duplicate payment gurthinchabadindi.`,
+    refund: (amt) => `${amt} rupayalu tirigi pampabaddayi.`,
     success: (amt) => `${amt} rupayalu Paytm lo andindi.`,
   },
 };
@@ -35,32 +39,31 @@ const LANG_LOCALE = {
   Telugu: "te-IN",
 };
 
-export const Soundbox = ({ amount, playing, onPlay, phase, token = "4821" }) => {
+// Fraud-proof: nothing is announced while a payment is idle or still in flight.
+const CATEGORY_BY_STATUS = {
+  TIMEOUT_PENDING: "pending",
+  DECLINED: "decline",
+  DUPLICATE_ALERT: "duplicate",
+  REFUNDED: "refund",
+  SETTLED: "success",
+};
+
+const BARS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+export const Soundbox = ({ amount, playing, onPlay, status, token = "4821", customer = "Rahul" }) => {
   const [lang, setLang] = useState("Hindi");
-  const audioRef = useRef(null);
 
-  // Determine current announcement category
-  const isPending = phase === "BANK_TIMEOUT_U68" || phase === "STATUS_QR_SURFACED" || phase === "MERCHANT_STICKY";
-  const isDecline = phase === "PRE_DEBIT_DECLINE" || phase === "SARVAM_EXPLAINER" || phase === "UPI_LITE_PROMPT";
-  const isDuplicate = phase === "PANIC_RESCAN" || phase === "INTENT_GUARD_ALERT" || phase === "MERCHANT_DUPLICATE";
-  const isSettled = phase === "SETTLED" || phase === "SWITCH_SETTLED" || phase === "SOUNDBOX_SUCCESS";
-
-  const getAudioType = () => {
-    if (isDuplicate) return "duplicate";
-    if (isPending) return "pending";
-    if (isDecline) return "decline";
-    if (isSettled) return "success";
-    return "success";
-  };
-
-  const currentCategory = getAudioType();
-  const currentText = PHRASES[lang][currentCategory](amount || 250, token);
+  const currentCategory = CATEGORY_BY_STATUS[status] || null;
+  const who = customer.split(" ")[0];
+  const currentText = currentCategory ? PHRASES[lang][currentCategory](amount || 250, token, who) : null;
 
   const speak = () => {
+    if (!currentCategory) return;
     try {
       // First try to play pre-recorded audio file if available
       let fileToPlay = null;
       if (currentCategory === "duplicate") fileToPlay = "/audio/sbx_dupe_warning.wav";
+      else if (currentCategory === "refund") fileToPlay = "/audio/sbx_dupe_refunded_400.wav";
       else if (currentCategory === "pending") fileToPlay = "/audio/sbx_holding_token.wav";
       else if (currentCategory === "decline") fileToPlay = "/audio/sbx_decline_350.wav";
       else if (amount === 350) fileToPlay = "/audio/sbx_success_350.wav";
@@ -101,49 +104,42 @@ export const Soundbox = ({ amount, playing, onPlay, phase, token = "4821" }) => 
   };
 
   return (
-    <div
-      data-testid="paytm-soundbox"
-      className="rounded-2xl p-4 bg-gradient-to-b from-[#002970] to-[#001c54] text-white border border-[#001540] relative overflow-hidden shadow-lg"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#00BAF2]" />
-            <span className="text-[9px] uppercase tracking-widest text-cyan-300 font-mono-ui font-bold">
-              Paytm Soundbox 4G · Sarvam bulbul-v4-flash
-            </span>
-          </div>
-          <div className="font-display font-bold text-sm mt-0.5">Fraud-Safe Voice Alerts</div>
+    <section data-testid="paytm-soundbox" className="flex flex-col rounded-2xl bg-paytm-navy p-4 text-white shadow-card sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[15px] font-semibold">Soundbox</div>
+          <div className="text-xs text-white/60">Voice alerts · Sarvam bulbul</div>
         </div>
-        <Volume2 className="w-5 h-5 text-cyan-300" />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
+          <Volume2 className={`h-4 w-4 ${playing ? "text-paytm-sky" : "text-white/70"}`} />
+        </span>
       </div>
 
-      {/* Visualizer bars */}
-      <div className="mt-3 flex items-end justify-center gap-1.5 h-12 bg-black/40 rounded-xl py-2 px-3 border border-white/5">
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <div
+      {/* Visualizer */}
+      <div className="mt-4 flex h-12 items-center justify-center gap-1 rounded-xl bg-black/20 px-3" aria-hidden="true">
+        {BARS.map((i) => (
+          <span
             key={i}
-            className={`sound-bar ${playing ? "active" : ""}`}
-            style={{
-              height: `${25 + ((i * 17) % 65)}%`,
-              animationDelay: `${i * 80}ms`,
-              background: playing ? "#00BAF2" : "rgba(0,186,242,0.3)",
-            }}
+            className={`w-1 rounded-full ${playing ? "animate-sound-wave bg-paytm-sky" : "bg-white/20"}`}
+            style={{ height: `${30 + ((i * 23) % 60)}%`, animationDelay: `${i * 70}ms` }}
           />
         ))}
       </div>
 
-      {/* Regional Language Buttons */}
-      <div className="mt-3 flex flex-wrap gap-1">
+      <p className="mt-3 min-h-[2.5rem] text-[13px] leading-snug text-white/80">
+        {currentText ? `“${currentText}”` : "Listening… nothing is announced until a payment is confirmed."}
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
         {Object.keys(PHRASES).map((l) => (
           <button
             key={l}
+            type="button"
             data-testid={`soundbox-lang-${l.toLowerCase()}-btn`}
             onClick={() => setLang(l)}
-            className={`min-h-[32px] text-[10px] px-2.5 py-1 rounded-full font-semibold transition-all ${
-              lang === l
-                ? "bg-[#00BAF2] text-[#002970] shadow"
-                : "bg-white/10 text-cyan-100 hover:bg-white/20"
+            aria-pressed={lang === l}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              lang === l ? "bg-white text-paytm-navy" : "bg-white/10 text-white/80 hover:bg-white/20"
             }`}
           >
             {l}
@@ -151,26 +147,21 @@ export const Soundbox = ({ amount, playing, onPlay, phase, token = "4821" }) => 
         ))}
       </div>
 
-      {/* Replay Voice Alert */}
       <button
+        type="button"
         data-testid="soundbox-replay-btn"
         onClick={speak}
-        className="min-h-[44px] press-shrink mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white text-[#002970] font-display font-bold text-xs hover:bg-cyan-50 shadow-md"
+        disabled={!currentCategory}
+        className="btn mt-4 w-full bg-paytm-sky text-white hover:bg-[#00A6D9] disabled:bg-white/10 disabled:opacity-100 disabled:text-white/40"
       >
-        <Play className="w-3.5 h-3.5 fill-[#002970]" />
-        Replay Sarvam Alert ({lang})
+        <Play className="h-4 w-4 fill-current" />
+        Replay alert
       </button>
 
-      {/* Live spoken phrase echo */}
-      <div className="mt-2 text-[10px] text-cyan-200/90 italic text-center font-medium leading-tight">
-        "{currentText}"
+      <div className="mt-auto flex items-center gap-1.5 pt-3 text-[11px] text-white/50">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        Never announces success on a pending payment
       </div>
-
-      {/* Fraud protection guarantee label */}
-      <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-center gap-1 text-[9px] text-cyan-300/80 font-mono-ui">
-        <ShieldAlert className="w-3 h-3 text-amber-300" />
-        <span>Fraud-Proof: Never announces success on pending state</span>
-      </div>
-    </div>
+    </section>
   );
 };

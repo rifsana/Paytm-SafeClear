@@ -1,49 +1,61 @@
-import { TrendingUp } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ReceiptText } from "lucide-react";
+import { formatINR } from "@/lib/status";
 
 const STATUS_CLS = {
-  SUCCESS:        "text-emerald-700 bg-emerald-50 border-emerald-200",
-  SETTLED:        "text-emerald-700 bg-emerald-50 border-emerald-200",
-  FAILED:         "text-rose-700 bg-rose-50 border-rose-200",
-  HUMAN_IN_LOOP:  "text-amber-700 bg-amber-50 border-amber-200",
-  AUTO_REFUNDED:  "text-violet-700 bg-violet-50 border-violet-200",
+  SUCCESS:       "text-emerald-600",
+  SETTLED:       "text-emerald-600",
+  FAILED:        "text-rose-600",
+  HUMAN_IN_LOOP: "text-amber-600",
+  AUTO_REFUNDED: "text-violet-600",
 };
 
-export const LedgerFeed = ({ entries }) => {
+export const LedgerFeed = ({ entries = [] }) => {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4" data-testid="ledger-feed">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-[#002970]" />
-          <div className="font-display font-bold text-[#002970] text-sm">Live Merchant Ledger</div>
+    <section className="card flex flex-col" data-testid="ledger-feed">
+      <div className="card-header">
+        <div>
+          <div className="card-title">Today's payments</div>
+          <div className="card-subtitle">Live merchant ledger</div>
         </div>
-        <div className="text-[10px] text-slate-500 font-mono-ui">{entries.length} txns</div>
+        <span className="pill bg-slate-100 text-slate-600">{entries.length}</span>
       </div>
 
-      <div className="max-h-56 overflow-y-auto thin-scroll space-y-1.5">
+      <div className="thin-scroll max-h-72 flex-1 overflow-y-auto">
         {entries.length === 0 && (
-          <div className="text-xs text-slate-500 italic py-6 text-center">
-            No settlements yet. Run a scenario to see transactions appear.
+          <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <ReceiptText className="h-5 w-5" />
+            </span>
+            <div className="mt-3 text-sm font-medium text-slate-700">No payments yet</div>
+            <div className="mt-0.5 text-xs text-slate-500">Run a scenario to see settlements here.</div>
           </div>
         )}
-        {entries.map((e) => (
-          <div
-            key={e.id}
-            data-testid={`ledger-entry-${e.id}`}
-            className="log-item flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/40 px-3 py-2"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold text-[#002970] truncate">{e.ref}</div>
-              <div className="text-[10px] text-slate-500 font-mono-ui">{e.time} · {e.bank}</div>
-            </div>
-            <div className="font-display font-bold text-[#002970] text-sm">
-              ₹{e.amount.toLocaleString("en-IN")}
-            </div>
-            <span className={`font-mono-ui text-[9px] px-2 py-0.5 rounded-full border uppercase tracking-wider ${STATUS_CLS[e.status] || "text-slate-700 bg-slate-50 border-slate-200"}`}>
-              {e.status.replace("_", " ")}
-            </span>
-          </div>
-        ))}
+        <ul className="divide-y divide-slate-100">
+          {entries.map((e) => {
+            const refund = e.status === "AUTO_REFUNDED";
+            const Icon = refund ? ArrowUpRight : ArrowDownLeft;
+            return (
+              <li key={e.id} data-testid={`ledger-entry-${e.id}`} className="flex animate-fade-in items-center gap-3 px-4 py-3 sm:px-5">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${refund ? "bg-violet-50 text-violet-600" : "bg-emerald-50 text-emerald-600"}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-slate-900">{e.ref}</div>
+                  <div className="text-xs text-slate-500 tabular">{e.time} · {e.bank}</div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-sm font-semibold tabular ${refund ? "text-slate-900" : "text-emerald-600"}`}>
+                    {refund ? "−" : "+"}{formatINR(e.amount)}
+                  </div>
+                  <div className={`text-[11px] font-medium capitalize ${STATUS_CLS[e.status] || "text-slate-500"}`}>
+                    {String(e.status).replace(/_/g, " ").toLowerCase()}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
-    </div>
+    </section>
   );
 };

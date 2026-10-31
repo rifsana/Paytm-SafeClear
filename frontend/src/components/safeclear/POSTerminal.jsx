@@ -1,24 +1,79 @@
-import { useState } from "react";
-import { PackageCheck, Banknote, PauseOctagon, QrCode, RefreshCcw, ShieldCheck, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  PackageCheck,
+  Banknote,
+  PauseCircle,
+  QrCode,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
+  XCircle,
+  Copy,
+  Undo2,
+  ScanLine,
+} from "lucide-react";
+import { statusMeta, formatINR } from "@/lib/status";
+
+const Panel = ({ tone, icon: Icon, spin, title, subtitle, children }) => {
+  const t = {
+    slate: "bg-slate-50 border-slate-200",
+    sky: "bg-paytm-skySoft/50 border-sky-200",
+    rose: "bg-rose-50/70 border-rose-200",
+    amber: "bg-amber-50/70 border-amber-200",
+    violet: "bg-violet-50/70 border-violet-200",
+    emerald: "bg-emerald-50/70 border-emerald-200",
+  }[tone];
+  const ic = {
+    slate: "bg-white text-slate-400",
+    sky: "bg-white text-paytm-sky",
+    rose: "bg-rose-500 text-white",
+    amber: "bg-amber-500 text-white",
+    violet: "bg-violet-600 text-white",
+    emerald: "bg-emerald-500 text-white",
+  }[tone];
+  return (
+    <div className={`animate-fade-in rounded-2xl border p-4 ${t}`}>
+      <div className="flex items-start gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-card ${ic}`}>
+          <Icon className={`h-5 w-5 ${spin ? "animate-spin" : ""}`} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[15px] font-semibold text-slate-900">{title}</div>
+          {subtitle && <div className="mt-0.5 text-[13px] leading-snug text-slate-600">{subtitle}</div>}
+        </div>
+      </div>
+      {children && <div className="mt-4">{children}</div>}
+    </div>
+  );
+};
 
 export const POSTerminal = ({
   amount,
   status,
   token = "4821",
   customer = "Rahul S.",
+  bank = "HDFC",
+  rrn,
+  refundRef,
+  connected,
   onDecision,
-  decision,
   onScanQR,
   onInstantRefund,
-  refundDone,
   qrScanned,
 }) => {
   const [scanModalOpen, setScanModalOpen] = useState(false);
+  const [decision, setDecision] = useState(null);
+  const meta = statusMeta(status);
 
-  const isPending = status === "BANK_TIMEOUT_U68" || status === "STATUS_QR_SURFACED" || status === "MERCHANT_STICKY";
-  const isDecline = status === "PRE_DEBIT_DECLINE" || status === "SARVAM_EXPLAINER" || status === "UPI_LITE_PROMPT";
-  const isDuplicate = status === "PANIC_RESCAN" || status === "INTENT_GUARD_ALERT" || status === "MERCHANT_DUPLICATE";
-  const isSettled = status === "SETTLED" || status === "SWITCH_SETTLED";
+  useEffect(() => {
+    if (status === "IDLE") setDecision(null);
+  }, [status]);
+
+  const decide = (d) => {
+    setDecision(d);
+    onDecision?.(d);
+  };
 
   const handleScanClick = () => {
     setScanModalOpen(true);
@@ -28,216 +83,145 @@ export const POSTerminal = ({
     }, 1200);
   };
 
+  const isSettled = status === "SETTLED";
+
+  const quickActions = [
+    { id: "RELEASE_GOODS", label: "Release", icon: PackageCheck, active: decision === "RELEASE_GOODS" || isSettled, cls: "border-emerald-300 bg-emerald-50 text-emerald-700" },
+    { id: "TAKE_CASH_AUTO_REFUND", label: "Cash + refund", icon: Banknote, active: decision === "TAKE_CASH_AUTO_REFUND", cls: "border-violet-300 bg-violet-50 text-violet-700" },
+    { id: "HOLD_QUEUE", label: "Hold", icon: PauseCircle, active: decision === "HOLD_QUEUE", cls: "border-amber-300 bg-amber-50 text-amber-700" },
+  ];
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-[#0F172A] p-5 text-white shadow-xl relative overflow-hidden" data-testid="pos-terminal">
-      {/* Top Bar with Counter #3 & Token */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-[10px] uppercase tracking-widest text-cyan-300 font-mono-ui font-semibold">
-              POS Terminal · Counter #3
-            </span>
-          </div>
-          <div className="font-display font-bold text-lg mt-0.5">Sharma General Store</div>
+    <section className="card @container relative overflow-hidden" data-testid="pos-terminal">
+      <div className="card-header">
+        <div className="min-w-0">
+          <div className="card-title">Counter POS</div>
+          <div className="card-subtitle">Live customer attribution &amp; one-tap actions</div>
         </div>
-
-        <div className="text-right">
-          <div className="text-[9px] uppercase tracking-widest text-slate-400 font-mono-ui">Counter Token</div>
-          <div className="font-mono-ui font-black text-amber-300 text-base">
-            Token #{token}
-          </div>
-        </div>
+        <span className={`pill shrink-0 ${connected ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-slate-400"}`} />
+          {connected ? "Online" : "Offline"}
+        </span>
       </div>
 
-      {/* Main Amount & Live Status Banner */}
-      <div className="mt-4 flex items-end justify-between border-y border-white/10 py-3">
-        <div>
-          <div className="text-[10px] text-slate-400 uppercase tracking-wider">Amount Due</div>
-          <div className="font-display text-4xl font-black text-white" data-testid="pos-amount">
-            ₹{amount.toLocaleString("en-IN")}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[10px] text-slate-400 uppercase tracking-wider">Status</div>
-          <span
-            className={`inline-block font-mono-ui text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
-              isSettled
-                ? "bg-emerald-500/20 text-emerald-300 border-emerald-400"
-                : isDuplicate
-                ? "bg-violet-500/20 text-violet-300 border-violet-400"
-                : isPending
-                ? "bg-amber-500/20 text-amber-300 border-amber-400"
-                : isDecline
-                ? "bg-rose-500/20 text-rose-300 border-rose-400"
-                : "bg-white/10 text-slate-300 border-white/20"
-            }`}
-          >
-            {isSettled
-              ? "SETTLED ✅"
-              : isDuplicate
-              ? "DUPLICATE ALERT ⚠️"
-              : isPending
-              ? "IN-FLIGHT PENDING ⏳"
-              : isDecline
-              ? "PRE-DEBIT DECLINED ❌"
-              : "READY"}
-          </span>
-        </div>
-      </div>
-
-      {/* DYNAMIC SCENARIO ACTION CARDS */}
-
-      {/* 1. SCENARIO B: AMBER STICKY CARD FOR IN-FLIGHT PENDING */}
-      {isPending && !isSettled && (
-        <div className="mt-3 p-3.5 rounded-xl bg-amber-950/60 border border-amber-500/60 text-amber-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
-              <div>
-                <div className="font-display font-bold text-sm text-white">
-                  Pending: ₹{amount} from {customer}
-                </div>
-                <div className="text-[11px] text-amber-300/80 font-mono-ui">
-                  Token #{token} · Bank switch reconciling...
-                </div>
-              </div>
+      <div className="p-4 sm:p-5">
+        {/* Amount */}
+        <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <div className="eyebrow">Amount due · Token #{token}</div>
+            <div className="mt-1 text-4xl font-bold tracking-tight text-paytm-navy tabular sm:text-5xl" data-testid="pos-amount">
+              {formatINR(amount)}
+            </div>
+            <div className="mt-1 text-sm text-slate-500">
+              {customer} · {bank} Bank
             </div>
           </div>
+          <span className={`pill shrink-0 px-3 py-1 text-xs ${meta.classes.pill}`}>{meta.label}</span>
+        </div>
 
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={handleScanClick}
-              className="flex-1 min-h-[44px] py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-display font-bold text-xs flex items-center justify-center gap-1.5 press-shrink shadow-md"
+        {/* State panel */}
+        <div className="mt-5">
+          {status === "IDLE" && (
+            <Panel tone="slate" icon={QrCode} title="Waiting for payment" subtitle="Ask the customer to scan and pay. SafeClear will announce only confirmed credits." />
+          )}
+
+          {(status === "IN_FLIGHT" || status === "P1_IN_FLIGHT") && (
+            <Panel
+              tone="sky"
+              icon={Loader2}
+              spin
+              title={status === "P1_IN_FLIGHT" ? "Payment #1 in flight" : `Processing with ${bank} Bank`}
+              subtitle="Don't release goods yet — waiting for the bank to confirm."
+            />
+          )}
+
+          {status === "DECLINED" && (
+            <Panel
+              tone="rose"
+              icon={XCircle}
+              title="Declined — no money debited"
+              subtitle={`Token #${token} failed pre-debit (low balance). Customer is being offered 1-tap UPI Lite.`}
+            />
+          )}
+
+          {status === "TIMEOUT_PENDING" && (
+            <Panel
+              tone="amber"
+              icon={AlertTriangle}
+              title={`Pending ${formatINR(amount)} from ${customer}`}
+              subtitle={qrScanned ? "Status QR verified. Waiting for bank confirmation…" : "Bank switch is slow. Scan the customer's status QR to verify."}
             >
-              <QrCode className="w-4 h-4" />
-              {qrScanned ? "Verified ✓ (Hold Goods)" : "Scan Customer QR (1s Proof)"}
-            </button>
+              <div className="flex flex-col gap-2 @md:flex-row">
+                <button type="button" onClick={handleScanClick} disabled={qrScanned} className="btn-primary flex-1">
+                  {qrScanned ? <ShieldCheck className="h-4 w-4" /> : <ScanLine className="h-4 w-4" />}
+                  {qrScanned ? "Verified · hold goods" : "Scan customer QR"}
+                </button>
+                <button type="button" onClick={() => decide("TAKE_CASH_AUTO_REFUND")} className="btn-outline">
+                  <Banknote className="h-4 w-4" />
+                  Ask for cash
+                </button>
+              </div>
+            </Panel>
+          )}
+
+          {status === "DUPLICATE_ALERT" && (
+            <Panel tone="violet" icon={Copy} title="Suspected duplicate payment" subtitle={`${customer} paid ${formatINR(amount)} twice within 25s.`}>
+              <button type="button" onClick={onInstantRefund} className="btn w-full bg-violet-600 text-white hover:bg-violet-700">
+                <Undo2 className="h-4 w-4" />
+                Issue 1-tap refund · {formatINR(amount)}
+              </button>
+            </Panel>
+          )}
+
+          {status === "REFUNDED" && (
+            <Panel
+              tone="emerald"
+              icon={CheckCircle2}
+              title="Refund sent"
+              subtitle={`${formatINR(amount)} returned to ${customer}${refundRef ? ` · ${refundRef}` : ""}. No chargeback risk.`}
+            />
+          )}
+
+          {isSettled && (
+            <Panel
+              tone="emerald"
+              icon={CheckCircle2}
+              title="Payment received · release goods"
+              subtitle={`Settlement guaranteed by SafeClear${rrn ? ` · RRN ${rrn}` : ""}`}
+            />
+          )}
+        </div>
+
+        {/* Counter quick actions */}
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {quickActions.map(({ id, label, icon: Icon, active, cls }) => (
             <button
-              onClick={() => onDecision("TAKE_CASH_AUTO_REFUND")}
-              className="min-h-[44px] py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs flex items-center justify-center gap-1 press-shrink"
+              key={id}
+              type="button"
+              onClick={() => decide(id)}
+              aria-pressed={active}
+              className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl border px-1 text-xs font-semibold transition active:scale-[0.97] ${
+                active ? cls : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
             >
-              Ask Cash
+              <Icon className="h-4 w-4" />
+              <span className="text-center leading-tight">{label}</span>
             </button>
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* 2. SCENARIO C: PURPLE DUPLICATE WARNING & 1-TAP REFUND */}
-      {isDuplicate && !refundDone && (
-        <div className="mt-3 p-3.5 rounded-xl bg-violet-950/70 border border-violet-500/60 text-violet-200">
-          <div className="flex items-center gap-2 mb-2">
-            <RefreshCcw className="w-5 h-5 text-violet-400 animate-spin" />
-            <div>
-              <div className="font-display font-bold text-sm text-white">
-                ⚠️ Suspected Duplicate Payment
-              </div>
-              <div className="text-[11px] text-violet-300 font-mono-ui">
-                {customer} paid ₹{amount} twice within 45s
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={onInstantRefund}
-            className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-display font-bold text-xs flex items-center justify-center gap-2 press-shrink shadow-lg"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            Issue 1-Tap Instant Refund (₹{amount})
-          </button>
-        </div>
-      )}
-
-      {/* Duplicate Refund Completed */}
-      {refundDone && (
-        <div className="mt-3 p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/60 text-emerald-200 flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <div className="text-xs">
-            <span className="font-bold">Instant Refund Executed!</span> ₹{amount} sent back to {customer}. Docket sealed.
-          </div>
-        </div>
-      )}
-
-      {/* 3. SCENARIO A: PRE-DEBIT DECLINE ALERT */}
-      {isDecline && !isSettled && (
-        <div className="mt-3 p-3 rounded-xl bg-rose-950/60 border border-rose-500/60 text-rose-200">
-          <div className="font-display font-bold text-sm text-white">
-            Token #{token} Declined (Low Balance / Wrong PIN)
-          </div>
-          <div className="text-[11px] text-rose-300/80 mt-0.5">
-            Zero money debited. Soundbox vocalized: "Saman na dein". Customer using UPI Lite.
-          </div>
-        </div>
-      )}
-
-      {/* 4. SETTLED STATE */}
-      {isSettled && (
-        <div className="mt-3 p-3 rounded-xl bg-emerald-950/70 border border-emerald-500/70 text-emerald-200 flex items-center gap-2.5">
-          <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
-          <div>
-            <div className="font-display font-bold text-sm text-white">
-              Payment 100% Settled · Release Goods
-            </div>
-            <div className="text-[11px] text-emerald-300 font-mono-ui">
-              SafeClear Settlement Guarantee active • Zero dispute risk
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Merchant Counter Quick Actions */}
-      <div className="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2">
-        <button
-          onClick={() => onDecision("RELEASE_GOODS")}
-          className={`min-h-[44px] press-shrink flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-xs font-semibold border transition-all ${
-            decision === "RELEASE_GOODS" || isSettled
-              ? "bg-emerald-500 border-emerald-400 text-white shadow-md"
-              : "bg-white/5 border-white/10 text-slate-300 hover:bg-emerald-500/20"
-          }`}
-        >
-          <PackageCheck className="w-4 h-4" />
-          Release Goods
-        </button>
-        <button
-          onClick={() => onDecision("TAKE_CASH_AUTO_REFUND")}
-          className={`min-h-[44px] press-shrink flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-xs font-semibold border transition-all ${
-            decision === "TAKE_CASH_AUTO_REFUND"
-              ? "bg-violet-500 border-violet-400 text-white shadow-md"
-              : "bg-white/5 border-white/10 text-slate-300 hover:bg-violet-500/20"
-          }`}
-        >
-          <Banknote className="w-4 h-4" />
-          Cash + Auto-Refund
-        </button>
-        <button
-          onClick={() => onDecision("HOLD_QUEUE")}
-          className={`min-h-[44px] press-shrink flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-xs font-semibold border transition-all ${
-            decision === "HOLD_QUEUE"
-              ? "bg-amber-500 border-amber-400 text-white shadow-md"
-              : "bg-white/5 border-white/10 text-slate-300 hover:bg-amber-500/20"
-          }`}
-        >
-          <PauseOctagon className="w-4 h-4" />
-          Hold Queue
-        </button>
       </div>
 
-      {/* Simulated Scanner Modal */}
+      {/* Simulated scanner */}
       {scanModalOpen && (
-        <div className="absolute inset-0 bg-black/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-4 z-20">
-          <div
-            className="border-2 border-cyan-400 rounded-xl relative flex items-center justify-center overflow-hidden"
-            style={{ width: "160px", height: "160px" }}
-          >
-            <div className="w-full h-1 bg-cyan-400 absolute top-0 animate-[scanLaser_1s_infinite]" />
-            <QrCode className="w-16 h-16 text-cyan-300/40" />
+        <div className="absolute inset-0 z-20 flex animate-fade-in flex-col items-center justify-center bg-paytm-navy/95 p-4 text-white">
+          <div className="relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-2xl border-2 border-paytm-sky">
+            <div className="absolute inset-x-2 h-0.5 animate-scan-laser rounded bg-paytm-sky shadow-[0_0_12px_#00BAF2]" />
+            <QrCode className="h-16 w-16 text-white/20" />
           </div>
-          <div className="mt-3 font-mono-ui text-xs font-bold text-cyan-300">
-            Scanning Customer Dynamic Status QR...
-          </div>
-          <div className="text-[10px] text-slate-400">Verifying HMAC-SHA256 signature</div>
+          <div className="mt-4 text-sm font-semibold">Scanning status QR…</div>
+          <div className="mt-0.5 text-xs text-white/60">Verifying HMAC-SHA256 signature</div>
         </div>
       )}
-    </div>
+    </section>
   );
 };

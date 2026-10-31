@@ -2,6 +2,8 @@
 > **Track 2: AI-Powered Financial Journeys — Humanizing the Ambiguous 60 Seconds of UPI Point-of-Sale Payments**  
 > *Powered by Sarvam AI (`sarvam-105b`, `bulbul-v4-flash`, `saaras-v4`, `sarvam-m`)*
 
+🎥 **Project Demo & Video Walkthrough:** [Google Drive Demo Folder](https://drive.google.com/drive/folders/136d_klIFqaICnI5YWgD-EdLA6VCN8Vjo?usp=sharing)
+
 ---
 
 ## 📌 Executive Summary
@@ -45,6 +47,8 @@ Fintech apps currently use lazy catch-all hedging:
 ---
 
 ## 🎬 Master Demo Scenarios
+
+> 📺 **Watch Demo Video / Access Drive:** [Google Drive Demo Folder](https://drive.google.com/drive/folders/136d_klIFqaICnI5YWgD-EdLA6VCN8Vjo?usp=sharing)
 
 | Scenario | Trigger | What Current Apps Do | What SafeClear Does (Sarvam AI) |
 | :--- | :--- | :--- | :--- |

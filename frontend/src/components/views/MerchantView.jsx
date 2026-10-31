@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  ShieldCheck,
-  QrCode,
-  Smartphone,
-  RefreshCw,
-  AlertTriangle,
-  RotateCcw,
-  Sparkles,
-} from "lucide-react";
+import { Smartphone, RotateCcw, X } from "lucide-react";
 
 import { POSTerminal } from "@/components/safeclear/POSTerminal";
 import { Soundbox } from "@/components/safeclear/Soundbox";
@@ -17,6 +9,7 @@ import { BankHealth } from "@/components/safeclear/BankHealth";
 import { ChaosInjector } from "@/components/safeclear/ChaosInjector";
 import { EventLog } from "@/components/safeclear/EventLog";
 import { CertificateCard } from "@/components/safeclear/CertificateCard";
+import { SCENARIO_OPTIONS, formatINR } from "@/lib/status";
 
 export const MerchantView = ({
   session,
@@ -36,6 +29,7 @@ export const MerchantView = ({
   onResetBanks,
   connected,
   apiBase,
+  embedded = false,
 }) => {
   const [mobileModalOpen, setMobileModalOpen] = useState(false);
 
@@ -44,232 +38,149 @@ export const MerchantView = ({
   const token = session?.token || "4821";
   const customer = session?.customer || "Rahul S.";
   const scenario = session?.scenario || "SCENARIO_A";
+  const store = session?.store || "Sharma Bakery";
 
-  const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
-  const port = typeof window !== "undefined" ? window.location.port : "5173";
-  const clientMobileUrl = `http://${host}:${port}/?view=client`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+  const clientMobileUrl = `${origin}/?view=client`;
 
   // QR Code URL for mobile pairing
-  const qrImageSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+  const qrImageSrc = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&data=${encodeURIComponent(
     clientMobileUrl
   )}`;
 
   return (
-    <div className="min-h-screen bg-[#F4F7FB] pb-10 font-sans">
-      {/* Top Merchant Bar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#002970] to-[#00BAF2] flex items-center justify-center shadow-md">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-display text-xl font-extrabold tracking-tight text-[#002970]">
-                  Paytm <span className="text-[#00BAF2]">SafeClear</span>
-                </span>
-                <span className="font-mono-ui text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-[#7C3AED] border border-violet-200">
-                  Merchant POS Mode
-                </span>
-              </div>
-              <div className="text-[11px] text-slate-500 font-medium">
-                Counter #3 · Live Ambiguous 60s Terminal
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Scenario Buttons & Connect Mobile Phone */}
-          <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200">
-              {[
-                { id: "SCENARIO_A", label: "A: False Alarm (₹350)" },
-                { id: "SCENARIO_B", label: "B: Timeout QR (₹250)" },
-                { id: "SCENARIO_C", label: "C: Duplicate (₹400)" },
-              ].map((sc) => (
-                <button
-                  key={sc.id}
-                  onClick={() => onSelectScenario(sc.id)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all press-shrink ${
-                    scenario === sc.id
-                      ? "bg-[#002970] text-white shadow-sm"
-                      : "text-slate-600 hover:text-[#002970]"
-                  }`}
-                >
-                  {sc.label}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setMobileModalOpen(true)}
-              className="min-h-[44px] px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-display font-bold text-xs shadow-md hover:from-emerald-700 hover:to-teal-700 flex items-center gap-1.5 press-shrink"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>Connect Mobile</span>
-            </button>
-
-            <button
-              onClick={onReset}
-              title="Reset state"
-              className="min-h-[44px] p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 press-shrink border border-slate-200"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
+    <div className={embedded ? "@container" : "@container mx-auto max-w-[1440px] px-4 pb-10 pt-5 sm:px-6"}>
+      {/* Page header */}
+      <div className="flex flex-col gap-4 @3xl:flex-row @3xl:items-end @3xl:justify-between">
+        <div className="min-w-0">
+          <div className="eyebrow">Paytm for Business · Counter #3</div>
+          <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-paytm-navy">{store}</h1>
         </div>
-      </header>
 
-      {/* Main Grid: POS, Soundbox & Sarvam Engine */}
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Column 1: POS Terminal & Soundbox (6 cols) */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="card-surface p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <div className="font-display font-bold text-[#002970] text-base">
-                    Counter #3 POS Terminal
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    Live customer attribution & one-tap actions
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`status-dot ${
-                      connected ? "bg-emerald-500 text-emerald-500" : "bg-rose-500 text-rose-500"
-                    }`}
-                  />
-                  <span className="font-mono-ui text-xs font-bold text-slate-600">
-                    Token #{token}
-                  </span>
-                </div>
-              </div>
-
-              {/* POSTerminal Component */}
-              <POSTerminal
-                amount={amount}
-                status={
-                  status === "TIMEOUT_PENDING"
-                    ? "BANK_TIMEOUT_U68"
-                    : status === "DECLINED"
-                    ? "PRE_DEBIT_DECLINE"
-                    : status === "DUPLICATE_ALERT"
-                    ? "INTENT_GUARD_ALERT"
-                    : status === "SETTLED"
-                    ? "SETTLED"
-                    : "IDLE"
-                }
-                token={token}
-                customer={customer}
-                onDecision={onDecision}
-                onScanQR={onScanQR}
-                onInstantRefund={onInstantRefund}
-                refundDone={session?.refund_executed}
-                qrScanned={session?.qr_scanned}
-              />
-
-              {/* Soundbox Voice Alerts */}
-              <div className="mt-4">
-                <Soundbox
-                  amount={amount}
-                  playing={soundboxPlaying}
-                  onPlay={onPlaySoundbox}
-                  phase={
-                    status === "TIMEOUT_PENDING"
-                      ? "BANK_TIMEOUT_U68"
-                      : status === "DECLINED"
-                      ? "PRE_DEBIT_DECLINE"
-                      : status === "DUPLICATE_ALERT"
-                      ? "INTENT_GUARD_ALERT"
-                      : status === "SETTLED"
-                      ? "SETTLED"
-                      : "IDLE"
-                  }
-                  token={token}
-                />
-              </div>
-
-              {/* Live Merchant Ledger Feed */}
-              <div className="mt-4">
-                <LedgerFeed entries={ledger} />
-              </div>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="segmented no-scrollbar min-w-0 flex-1 overflow-x-auto @3xl:flex-none" role="group" aria-label="Demo scenario">
+            {SCENARIO_OPTIONS.map((sc) => (
+              <button
+                key={sc.id}
+                type="button"
+                aria-pressed={scenario === sc.id}
+                onClick={() => onSelectScenario(sc.id)}
+                className="flex-1 whitespace-nowrap !px-2 @md:!px-3"
+              >
+                <span className="hidden text-slate-400 @3xl:inline">{sc.short} · </span>
+                {sc.label}
+                <span className="ml-1 hidden text-slate-400 @lg:inline">{formatINR(sc.amount)}</span>
+              </button>
+            ))}
           </div>
+          {!embedded && (
+            <button type="button" onClick={() => setMobileModalOpen(true)} className="btn-outline shrink-0 px-3">
+              <Smartphone className="h-4 w-4" />
+              <span className="hidden @xl:inline">Connect phone</span>
+            </button>
+          )}
+          <button type="button" onClick={onReset} title="Reset session" aria-label="Reset session" className="btn-icon h-11 w-11 shrink-0 border border-slate-200 bg-white">
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
-          {/* Column 2: Sarvam AI Intelligence Core & Bank Telemetry (6 cols) */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="card-surface p-5 space-y-4">
-              <AICopilot
-                apiBase={apiBase}
-                context={{
-                  scenario,
-                  amount,
-                  status,
-                  token,
-                  customer,
-                  bank: session?.bank,
-                }}
-              />
-              <BankHealth health={bankHealth} />
-              <ChaosInjector
-                onCrashHDFC={onCrashHDFC}
-                onSpikeSBI={onSpikeSBI}
-                onReset={onResetBanks}
-              />
-            </div>
+      {/* Main grid */}
+      <div className="mt-5 grid grid-cols-1 gap-4 @4xl:grid-cols-12 @4xl:gap-5">
+        <div className="space-y-4 @4xl:col-span-7">
+          <POSTerminal
+            amount={amount}
+            status={status}
+            token={token}
+            customer={customer}
+            bank={session?.bank}
+            rrn={session?.rrn}
+            refundRef={session?.refund_ref}
+            connected={connected}
+            onDecision={onDecision}
+            onScanQR={onScanQR}
+            onInstantRefund={onInstantRefund}
+            qrScanned={session?.qr_scanned}
+          />
 
-            {/* Event log */}
-            <EventLog events={events} />
+          <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
+            <Soundbox
+              amount={amount}
+              playing={soundboxPlaying}
+              onPlay={onPlaySoundbox}
+              status={status}
+              token={token}
+              customer={customer}
+            />
+            <LedgerFeed entries={ledger} />
           </div>
         </div>
 
-        {/* NPCI UDIR Settlement Certificate */}
+        <div className="space-y-4 @4xl:col-span-5">
+          <AICopilot
+            apiBase={apiBase}
+            context={{
+              scenario,
+              amount,
+              status,
+              token,
+              customer,
+              bank: session?.bank,
+            }}
+          />
+          <BankHealth health={bankHealth}>
+            <ChaosInjector onCrashHDFC={onCrashHDFC} onSpikeSBI={onSpikeSBI} onReset={onResetBanks} />
+          </BankHealth>
+          <EventLog events={events} />
+        </div>
+      </div>
+
+      {certificate && (
         <div className="mt-5">
           <CertificateCard cert={certificate} />
         </div>
-      </main>
+      )}
 
-      {/* Connect Mobile Modal */}
+      {/* Connect phone modal */}
       {mobileModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4 animate-scale-up">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto text-emerald-600">
-              <Smartphone className="w-6 h-6" />
-            </div>
-
-            <div>
-              <div className="font-display font-extrabold text-lg text-slate-900">
-                Open Customer App on Mobile
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={() => setMobileModalOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="connect-phone-title"
+            className="w-full max-w-sm animate-scale-up rounded-t-3xl bg-white p-6 text-center shadow-lift sm:rounded-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div className="text-left">
+                <div id="connect-phone-title" className="text-lg font-bold text-paytm-navy">
+                  Open customer app
+                </div>
+                <p className="mt-0.5 text-sm text-slate-500">Scan with your phone camera to play the customer.</p>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Scan this QR with your smartphone camera to perform the demo as the customer!
-              </p>
+              <button type="button" onClick={() => setMobileModalOpen(false)} className="btn-icon -mr-2 -mt-1" aria-label="Close">
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div
-              className="p-3 bg-slate-50 border border-slate-200 rounded-2xl mx-auto flex items-center justify-center"
-              style={{ width: "180px", height: "180px" }}
-            >
-              <img
-                src={qrImageSrc}
-                alt="Client Mobile URL QR"
-                style={{ width: "160px", height: "160px", display: "block" }}
-                width="160"
-                height="160"
-                className="rounded-lg"
-              />
+            <div className="mx-auto mt-5 w-fit rounded-2xl border border-slate-200 p-3">
+              <img src={qrImageSrc} alt="QR code linking to the customer app" width="176" height="176" className="block h-44 w-44" />
             </div>
 
-            <div className="bg-slate-100 p-2.5 rounded-xl text-[11px] font-mono-ui text-slate-700 break-all select-all">
+            <div className="mt-4 select-all break-all rounded-xl bg-slate-100 px-3 py-2 font-mono text-xs text-slate-600">
               {clientMobileUrl}
             </div>
+            {/localhost|127\.0\.0\.1/.test(origin) && (
+              <p className="mt-2 text-[11px] text-amber-700">
+                Tip: open this page via your machine's LAN IP so your phone can reach it.
+              </p>
+            )}
 
-            <button
-              onClick={() => setMobileModalOpen(false)}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#002970] text-white font-display font-bold text-sm press-shrink"
-            >
-              Done / Close
+            <button type="button" onClick={() => setMobileModalOpen(false)} className="btn-primary mt-5 w-full">
+              Done
             </button>
           </div>
         </div>
